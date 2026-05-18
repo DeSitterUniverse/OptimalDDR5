@@ -45,5 +45,3 @@ Use the import button and select a `.LOG` file. The parser looks for a Memory se
 ## Source Warning
 
 The database combines official DDR5/platform documentation with overclocking guides and community experience. Community timing and power ranges are peer ranges, not guarantees. CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
-
-Future improvements should add more board-specific aliases, richer HWiNFO exports, user-editable profiles in persistent storage, sensor import, and more source-backed die/frequency buckets.
