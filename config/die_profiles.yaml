@@ -1,0 +1,456 @@
+die_profiles:
+  hynix_16g_m_die:
+    vendor: SK hynix
+    generation_or_revision: 16Gb M-die
+    density_gbit: 16
+    common_module_capacities: [2x16GB, 2x32GB dual-rank]
+    typical_strengths: [Strong AM5 DDR5-6000 tuning, good refresh behavior, mature community data]
+    typical_weaknesses: [Usually less high-frequency headroom than strong A-die bins]
+    frequency_behavior: Commonly seen around DDR5-6000 to 6800 depending on IMC and board.
+    timing_behavior: Often tight tCL/tRFC at 6000-6400; exact values vary by temperature and sample.
+    voltage_behavior: CAS latency often benefits most from VDD; other timings may not scale linearly.
+    thermal_behavior: Refresh/tREFI tolerance can degrade with heat.
+    efficiency_factor: 1.0
+    thermal_factor: 1.0
+    confidence: medium
+    timing_ranges: &hynix_m_ranges
+      by_frequency:
+        "6000":
+          tCL: {tight: [28, 30], moderate: [32, 34], loose: [36, 40], confidence: medium}
+          tRCDRD: {tight: [36, 38], moderate: [40, 44], loose: [46, 52], confidence: medium}
+          tRCDWR: {tight: [30, 36], moderate: [38, 44], loose: [46, 52], confidence: low}
+          tRP: {tight: [36, 38], moderate: [40, 44], loose: [46, 52], confidence: medium}
+          tRAS: {tight: [28, 40], moderate: [42, 80], loose: [82, 110], confidence: low}
+          tRFC: {tight: [440, 520], moderate: [521, 620], loose: [621, 760], confidence: medium}
+          tREFI: {tight: [50000, 65535], moderate: [32768, 49999], loose: [7800, 32767], confidence: low}
+          tRRDS: {tight: [4, 8], moderate: [9, 12], loose: [13, 16], confidence: low}
+          tRRDL: {tight: [8, 12], moderate: [13, 16], loose: [17, 24], confidence: low}
+          tFAW: {tight: [16, 32], moderate: [33, 40], loose: [41, 56], confidence: low}
+          tWR: {tight: [24, 36], moderate: [37, 48], loose: [49, 72], confidence: low}
+          tWTRS: {tight: [4, 8], moderate: [9, 12], loose: [13, 20], confidence: low}
+          tWTRL: {tight: [12, 24], moderate: [25, 32], loose: [33, 48], confidence: low}
+          tRTP: {tight: [8, 12], moderate: [13, 16], loose: [17, 24], confidence: low}
+          tCWL: {tight: [28, 30], moderate: [32, 36], loose: [38, 44], confidence: low}
+          tWRRD: {tight: [1, 4], moderate: [5, 8], loose: [9, 16], confidence: low}
+          tWRPRE: {tight: [70, 96], moderate: [97, 120], loose: [121, 160], confidence: low}
+          tRDRDSG: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tRDRDDG: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tWRWRSG: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tWRWRDG: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tRDRDSD: {tight: [1, 8], moderate: [9, 14], loose: [15, 24], confidence: low}
+          tRDRDDD: {tight: [1, 8], moderate: [9, 14], loose: [15, 24], confidence: low}
+        "7200":
+          tCL: {tight: [32, 34], moderate: [36, 38], loose: [40, 44], confidence: low}
+          tRCDRD: {tight: [42, 46], moderate: [48, 52], loose: [54, 60], confidence: low}
+          tRP: {tight: [42, 46], moderate: [48, 52], loose: [54, 60], confidence: low}
+          tRFC: {tight: [500, 620], moderate: [621, 760], loose: [761, 900], confidence: low}
+          tRRDS: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tRRDL: {tight: [8, 12], moderate: [13, 18], loose: [19, 28], confidence: low}
+          tFAW: {tight: [16, 32], moderate: [33, 48], loose: [49, 64], confidence: low}
+          tWR: {tight: [32, 48], moderate: [49, 64], loose: [65, 84], confidence: low}
+          tRTP: {tight: [8, 12], moderate: [13, 16], loose: [17, 24], confidence: low}
+          tCWL: {tight: [30, 36], moderate: [38, 42], loose: [44, 52], confidence: low}
+          tWTRS: {tight: [4, 8], moderate: [9, 14], loose: [15, 22], confidence: low}
+          tWTRL: {tight: [12, 24], moderate: [25, 36], loose: [37, 52], confidence: low}
+    voltage_ranges:
+      daily_typical: {VDD: [1.35, 1.45], VDDQ: [1.30, 1.45]}
+      aggressive: {VDD: [1.46, 1.55], VDDQ: [1.46, 1.55]}
+    sources: &community_sources
+      - url: https://www.overclockers.com/ddr5-overclocking-guide/
+        source_name: Overclockers DDR5 overclocking guide
+        source_tier: 2
+        confidence: medium
+        notes: Early Alder Lake DDR5 OC guide with voltage and timing context.
+        date_checked: "2026-05-17"
+      - url: https://www.reddit.com/r/overclocking/comments/1gj8zlj
+        source_name: Overclocking community Hynix M-die discussion
+        source_tier: 3
+        confidence: low
+        notes: Community anecdotes; useful only as broad peer context.
+        date_checked: "2026-05-17"
+      - url: https://linustechtips.com/topic/1491776-help-me-tune-my-ddr5-timings-hynix-a-die/
+        source_name: Linus Tech Tips Hynix A-die timing discussion
+        source_tier: 3
+        confidence: low
+        notes: Used for dependency notes around tWRRD/tWTR and tWRPRE/tWR variance.
+        date_checked: "2026-05-17"
+      - url: https://www.overclock.net/threads/amd-hynix-ddr5-overclocking-guide.1801842/
+        source_name: Overclock.net AMD Hynix DDR5 overclocking guide
+        source_tier: 2
+        confidence: medium
+        notes: Used for AM5 Hynix secondary and tertiary timing examples.
+        date_checked: "2026-05-17"
+  hynix_16g_a_die:
+    vendor: SK hynix
+    generation_or_revision: 16Gb A-die
+    density_gbit: 16
+    common_module_capacities: [2x16GB, 2x32GB depending rank/config]
+    typical_strengths: [High-frequency scaling, strong Intel 7200+ profiles, good voltage tolerance with cooling]
+    typical_weaknesses: [Board and IMC limited at high MT/s, heat can hurt refresh behavior]
+    frequency_behavior: Often preferred for high-frequency DDR5 on strong 2-DIMM boards.
+    timing_behavior: Strong frequency class; primaries generally loosen as MT/s rises.
+    voltage_behavior: VDD may help tCL; high voltage increases thermal pressure.
+    thermal_behavior: Benefits from airflow when voltage and tREFI are aggressive.
+    efficiency_factor: 1.02
+    thermal_factor: 1.05
+    confidence: medium
+    timing_ranges:
+      by_frequency:
+        "6000":
+          tCL: {tight: [28, 30], moderate: [32, 34], loose: [36, 40], confidence: medium}
+          tRCDRD: {tight: [36, 38], moderate: [40, 44], loose: [46, 52], confidence: medium}
+          tRP: {tight: [36, 38], moderate: [40, 44], loose: [46, 52], confidence: medium}
+          tRFC: {tight: [420, 520], moderate: [521, 620], loose: [621, 780], confidence: medium}
+          tREFI: {tight: [50000, 65535], moderate: [32768, 49999], loose: [7800, 32767], confidence: low}
+          tRRDS: {tight: [4, 8], moderate: [9, 12], loose: [13, 16], confidence: low}
+          tRRDL: {tight: [8, 12], moderate: [13, 16], loose: [17, 24], confidence: low}
+          tFAW: {tight: [16, 32], moderate: [33, 40], loose: [41, 56], confidence: low}
+          tWR: {tight: [24, 48], moderate: [49, 64], loose: [65, 84], confidence: low}
+          tRTP: {tight: [8, 12], moderate: [13, 16], loose: [17, 24], confidence: low}
+          tCWL: {tight: [28, 32], moderate: [34, 38], loose: [40, 48], confidence: low}
+          tWTRS: {tight: [4, 8], moderate: [9, 12], loose: [13, 20], confidence: low}
+          tWTRL: {tight: [12, 24], moderate: [25, 32], loose: [33, 48], confidence: low}
+          tWRRD: {tight: [1, 4], moderate: [5, 8], loose: [9, 16], confidence: low}
+          tWRPRE: {tight: [70, 96], moderate: [97, 120], loose: [121, 160], confidence: low}
+          tRDRDSG: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tRDRDDG: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tWRWRSG: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tWRWRDG: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+        "7200":
+          tCL: {tight: [32, 34], moderate: [36, 38], loose: [40, 46], confidence: medium}
+          tRCDRD: {tight: [42, 46], moderate: [48, 52], loose: [54, 62], confidence: medium}
+          tRP: {tight: [42, 46], moderate: [48, 52], loose: [54, 62], confidence: medium}
+          tRFC: {tight: [480, 620], moderate: [621, 760], loose: [761, 920], confidence: low}
+          tRRDS: {tight: [4, 8], moderate: [9, 12], loose: [13, 18], confidence: low}
+          tRRDL: {tight: [8, 12], moderate: [13, 18], loose: [19, 28], confidence: low}
+          tFAW: {tight: [16, 32], moderate: [33, 48], loose: [49, 64], confidence: low}
+          tWR: {tight: [32, 48], moderate: [49, 64], loose: [65, 84], confidence: low}
+          tRTP: {tight: [8, 12], moderate: [13, 16], loose: [17, 24], confidence: low}
+          tCWL: {tight: [30, 36], moderate: [38, 42], loose: [44, 52], confidence: low}
+          tWRRD: {tight: [1, 4], moderate: [5, 10], loose: [11, 18], confidence: low}
+    voltage_ranges:
+      daily_typical: {VDD: [1.35, 1.45], VDDQ: [1.35, 1.45]}
+      aggressive: {VDD: [1.46, 1.60], VDDQ: [1.46, 1.55]}
+    sources: *community_sources
+  hynix_24g_m_die:
+    vendor: SK hynix
+    generation_or_revision: 24Gb M-die
+    density_gbit: 24
+    common_module_capacities: [2x24GB, 2x48GB]
+    typical_strengths: [High capacity at useful frequencies, good 2x24GB behavior]
+    typical_weaknesses: [Less mature data, refresh ranges differ from 16Gb ICs]
+    frequency_behavior: Common in 48GB and 96GB kits; platform and rank count matter.
+    timing_behavior: Often needs adjusted refresh/secondary expectations versus 16Gb.
+    voltage_behavior: Similar DIMM VDD/VDDQ ranges, but heat/capacity matter.
+    thermal_behavior: Higher density can raise heat sensitivity.
+    efficiency_factor: 1.08
+    thermal_factor: 1.12
+    confidence: low
+    timing_ranges: *hynix_m_ranges
+    voltage_ranges:
+      daily_typical: {VDD: [1.35, 1.45], VDDQ: [1.35, 1.45]}
+      aggressive: {VDD: [1.46, 1.55], VDDQ: [1.46, 1.55]}
+    sources:
+      - url: https://www.reddit.com/r/overclocking/comments/1h8y83j
+        source_name: 24GB Hynix M-die AM5 community notes
+        source_tier: 3
+        confidence: low
+        notes: Anecdotal 24Gb tuning discussion.
+        date_checked: "2026-05-17"
+  hynix_24g_a_die:
+    vendor: SK hynix
+    generation_or_revision: 24Gb A-die or high-bin 24Gb family
+    density_gbit: 24
+    common_module_capacities: [2x24GB, 2x48GB]
+    typical_strengths: [Potential high-frequency 24GB kits]
+    typical_weaknesses: [Naming and public confirmation are inconsistent]
+    frequency_behavior: Treat as Hynix-like high-density until better evidence is entered.
+    timing_behavior: Use broader ranges due uncertainty.
+    voltage_behavior: Conservative Hynix-like guidance.
+    thermal_behavior: Watch heat on high-capacity modules.
+    efficiency_factor: 1.08
+    thermal_factor: 1.12
+    confidence: low
+    timing_ranges: *hynix_m_ranges
+    voltage_ranges:
+      daily_typical: {VDD: [1.35, 1.45], VDDQ: [1.35, 1.45]}
+      aggressive: {VDD: [1.46, 1.55], VDDQ: [1.46, 1.55]}
+    sources: *community_sources
+  hynix_32g_high_density:
+    vendor: SK hynix
+    generation_or_revision: 32Gb/high-density DDR5
+    density_gbit: 32
+    common_module_capacities: [2x64GB, server-derived high-capacity modules]
+    typical_strengths: [Capacity]
+    typical_weaknesses: [Sparse consumer OC data, refresh can be much looser]
+    frequency_behavior: Use conservative expectations.
+    timing_behavior: Broad unknown ranges; user should edit with kit-specific data.
+    voltage_behavior: Conservative.
+    thermal_behavior: Capacity and module design dominate.
+    efficiency_factor: 1.18
+    thermal_factor: 1.2
+    confidence: low
+    timing_ranges: {by_frequency: {}}
+    voltage_ranges:
+      daily_typical: {VDD: [1.10, 1.35], VDDQ: [1.10, 1.35]}
+      aggressive: {VDD: [1.36, 1.45], VDDQ: [1.36, 1.45]}
+    sources:
+      - url: https://www.micron.com/products/memory/dram-components/ddr5-sdram
+        source_name: Micron DDR5 technology overview
+        source_tier: 1
+        confidence: high
+        notes: Used for density and voltage baseline context, not Hynix-specific OC.
+        date_checked: "2026-05-17"
+  samsung_16g_b_die:
+    vendor: Samsung
+    generation_or_revision: 16Gb DDR5 B-die/common Samsung DDR5
+    density_gbit: 16
+    common_module_capacities: [2x16GB, 2x32GB]
+    typical_strengths: [Availability, reasonable JEDEC/XMP behavior]
+    typical_weaknesses: [Often weaker tight timing/high frequency behavior than Hynix]
+    frequency_behavior: Conservative frequency expectations compared with strong Hynix bins.
+    timing_behavior: Broader and looser ranges.
+    voltage_behavior: Do not assume Hynix voltage/timing scaling.
+    thermal_behavior: Standard airflow recommended when tuned.
+    efficiency_factor: 1.08
+    thermal_factor: 1.08
+    confidence: low
+    timing_ranges:
+      by_frequency:
+        "6000":
+          tCL: {tight: [34, 36], moderate: [38, 40], loose: [42, 46], confidence: low}
+          tRCDRD: {tight: [40, 44], moderate: [46, 50], loose: [52, 60], confidence: low}
+          tRP: {tight: [40, 44], moderate: [46, 50], loose: [52, 60], confidence: low}
+          tRFC: {tight: [560, 700], moderate: [701, 850], loose: [851, 1050], confidence: low}
+    voltage_ranges:
+      daily_typical: {VDD: [1.30, 1.40], VDDQ: [1.30, 1.40]}
+      aggressive: {VDD: [1.41, 1.50], VDDQ: [1.41, 1.50]}
+    sources:
+      - url: https://webpcdesigns.com/blog/ddr5-overclocking-guide
+        source_name: WebPC DDR5 IC profile guide
+        source_tier: 2
+        confidence: low
+        notes: Broad community-style guide; ranges are conservative.
+        date_checked: "2026-05-17"
+  samsung_16g_early:
+    vendor: Samsung
+    generation_or_revision: Early 16Gb DDR5
+    density_gbit: 16
+    common_module_capacities: [2x16GB, 2x32GB]
+    typical_strengths: [Common early DDR5 kits, reasonable XMP behavior at 5600-6000]
+    typical_weaknesses: [Less frequency and refresh headroom than strong Hynix bins]
+    frequency_behavior: Often seen in DDR5-4800 to DDR5-6000 kits; above that depends heavily on board training.
+    timing_behavior: Treat 36-36-36 class at 6000 as tight for early Samsung when refresh and activation timings are also close.
+    voltage_behavior: Many early Samsung XMP profiles use lower VDD/VDDQ than aggressive Hynix profiles.
+    thermal_behavior: Watch refresh and tREFI under temperature; some modules lack onboard thermal sensors.
+    efficiency_factor: 1.08
+    thermal_factor: 1.08
+    confidence: medium
+    timing_ranges:
+      by_frequency:
+        "5600":
+          tCL: {tight: [34, 36], moderate: [38, 40], loose: [42, 46], confidence: medium}
+          tRCD: {tight: [34, 36], moderate: [38, 40], loose: [42, 48], confidence: medium}
+          tRP: {tight: [34, 36], moderate: [38, 40], loose: [42, 48], confidence: medium}
+          tRAS: {tight: [68, 76], moderate: [77, 90], loose: [91, 110], confidence: low}
+          tRC: {tight: [100, 110], moderate: [111, 128], loose: [129, 148], confidence: low}
+          tRFC: {tight: [480, 520], moderate: [521, 620], loose: [621, 760], confidence: low}
+          tRRDS: {tight: [4, 6], moderate: [7, 10], loose: [11, 16], confidence: low}
+          tRRDL: {tight: [8, 10], moderate: [11, 14], loose: [15, 20], confidence: low}
+          tFAW: {tight: [16, 20], moderate: [21, 32], loose: [33, 48], confidence: low}
+          tWR: {tight: [52, 56], moderate: [57, 72], loose: [73, 92], confidence: low}
+          tRTP: {tight: [12, 16], moderate: [17, 22], loose: [23, 30], confidence: low}
+          tRDRDSG: {tight: [12, 14], moderate: [15, 18], loose: [19, 24], confidence: low}
+          tRDRDDG: {tight: [8, 10], moderate: [11, 14], loose: [15, 20], confidence: low}
+          tWRWRSG: {tight: [12, 14], moderate: [15, 18], loose: [19, 24], confidence: low}
+          tWRWRDG: {tight: [8, 10], moderate: [11, 14], loose: [15, 20], confidence: low}
+        "6000":
+          tCL: {tight: [36, 38], moderate: [40, 42], loose: [44, 48], confidence: medium}
+          tRCD: {tight: [36, 38], moderate: [40, 44], loose: [46, 52], confidence: medium}
+          tRCDRD: {tight: [36, 40], moderate: [42, 46], loose: [48, 56], confidence: low}
+          tRCDWR: {tight: [36, 40], moderate: [42, 46], loose: [48, 56], confidence: low}
+          tRP: {tight: [36, 38], moderate: [40, 44], loose: [46, 52], confidence: medium}
+          tRAS: {tight: [72, 76], moderate: [77, 92], loose: [93, 112], confidence: low}
+          tRC: {tight: [108, 112], moderate: [113, 132], loose: [133, 152], confidence: low}
+          tRFC: {tight: [480, 482], moderate: [483, 600], loose: [601, 760], confidence: low}
+          tRRDS: {tight: [4, 6], moderate: [7, 10], loose: [11, 16], confidence: low}
+          tRRDL: {tight: [8, 10], moderate: [11, 14], loose: [15, 20], confidence: low}
+          tFAW: {tight: [16, 20], moderate: [21, 32], loose: [33, 48], confidence: low}
+          tWR: {tight: [52, 56], moderate: [57, 72], loose: [73, 92], confidence: low}
+          tRTP: {tight: [12, 16], moderate: [17, 22], loose: [23, 30], confidence: low}
+          tRDRDSG: {tight: [12, 14], moderate: [15, 18], loose: [19, 24], confidence: low}
+          tRDRDDG: {tight: [8, 10], moderate: [11, 14], loose: [15, 20], confidence: low}
+          tRDRDSD: {tight: [12, 14], moderate: [15, 18], loose: [19, 24], confidence: low}
+          tRDRDDD: {tight: [14, 16], moderate: [17, 20], loose: [21, 28], confidence: low}
+          tWRWRSG: {tight: [12, 14], moderate: [15, 18], loose: [19, 24], confidence: low}
+          tWRWRDG: {tight: [8, 10], moderate: [11, 14], loose: [15, 20], confidence: low}
+          tWRRD: {tight: [48, 64], moderate: [65, 80], loose: [81, 96], confidence: low}
+          tWRRDSG: {tight: [60, 66], moderate: [67, 78], loose: [79, 96], confidence: low}
+          tWRRDDG: {tight: [46, 50], moderate: [51, 64], loose: [65, 80], confidence: low}
+    voltage_ranges:
+      daily_typical: {VDD: [1.10, 1.30], VDDQ: [1.10, 1.30]}
+      aggressive: {VDD: [1.31, 1.45], VDDQ: [1.31, 1.45]}
+    sources:
+      - url: https://www.tomshardware.com/reviews/samsung-ddr5-4800-c40-review
+        source_name: Tom's Hardware Samsung DDR5-4800 review
+        source_tier: 2
+        confidence: medium
+        notes: Early Samsung DDR5 sample behavior and 36-36-36 style OC context.
+        date_checked: "2026-05-17"
+      - url: https://www.igorslab.de/en/s-how-to-avoid-ddr5-samsung-16gbit-s-the-corsair-vengeance-2x16-gb-6000cl38-kit-tested-with-teardown-and-overclocking/4/
+        source_name: Igor'sLAB Samsung 16Gbit DDR5 S-die article
+        source_tier: 2
+        confidence: medium
+        notes: Samsung 16Gbit DDR5 behavior and tertiary-loosening caveats around high speed training.
+        date_checked: "2026-05-17"
+      - url: https://www.overclockers.com/ddr5-overclocking-guide/
+        source_name: Overclockers DDR5 overclocking guide
+        source_tier: 2
+        confidence: medium
+        notes: Secondary timing and voltage context; values interpreted conservatively.
+        date_checked: "2026-05-17"
+  micron_16g_early:
+    vendor: Micron
+    generation_or_revision: Early 16Gb DDR5
+    density_gbit: 16
+    common_module_capacities: [2x16GB, OEM JEDEC kits]
+    typical_strengths: [JEDEC behavior, availability]
+    typical_weaknesses: [Often limited OC headroom versus Hynix]
+    frequency_behavior: Conservative.
+    timing_behavior: Loose peer ranges by default.
+    voltage_behavior: Use cautious voltage guidance.
+    thermal_behavior: Standard.
+    efficiency_factor: 1.1
+    thermal_factor: 1.08
+    confidence: low
+    timing_ranges:
+      by_frequency:
+        "5600":
+          tCL: {tight: [34, 36], moderate: [38, 42], loose: [44, 50], confidence: low}
+          tRCDRD: {tight: [42, 46], moderate: [48, 54], loose: [56, 64], confidence: low}
+          tRP: {tight: [42, 46], moderate: [48, 54], loose: [56, 64], confidence: low}
+          tRFC: {tight: [700, 820], moderate: [821, 950], loose: [951, 1100], confidence: low}
+    voltage_ranges:
+      daily_typical: {VDD: [1.10, 1.35], VDDQ: [1.10, 1.35]}
+      aggressive: {VDD: [1.36, 1.45], VDDQ: [1.36, 1.45]}
+    sources:
+      - url: https://www.micron.com/products/memory/dram-components/ddr5-sdram
+        source_name: Micron DDR5 technology overview
+        source_tier: 1
+        confidence: high
+        notes: Voltage, density, and DDR5 baseline source; OC ranges remain low confidence.
+        date_checked: "2026-05-17"
+  micron_24g_32g_high_density:
+    vendor: Micron
+    generation_or_revision: 24Gb/32Gb high-density DDR5
+    density_gbit: 24
+    common_module_capacities: [2x24GB, 2x48GB, 2x64GB]
+    typical_strengths: [Capacity and JEDEC support]
+    typical_weaknesses: [Sparse tuned desktop data]
+    frequency_behavior: Conservative unless kit-specific data is added.
+    timing_behavior: Leave most timings unknown.
+    voltage_behavior: JEDEC baseline is 1.1V; tuned kits vary.
+    thermal_behavior: Capacity and airflow sensitive.
+    efficiency_factor: 1.12
+    thermal_factor: 1.15
+    confidence: low
+    timing_ranges: {by_frequency: {}}
+    voltage_ranges:
+      daily_typical: {VDD: [1.10, 1.35], VDDQ: [1.10, 1.35]}
+      aggressive: {VDD: [1.36, 1.45], VDDQ: [1.36, 1.45]}
+    sources:
+      - url: https://www.micron.com/products/memory/dram-components/ddr5-sdram
+        source_name: Micron DDR5 technology overview
+        source_tier: 1
+        confidence: high
+        notes: Lists DDR5 16/24/32Gb device densities and 1.1V nominal baseline.
+        date_checked: "2026-05-17"
+  unknown_hynix_like:
+    vendor: Unknown/Hynix-like
+    generation_or_revision: Hynix-like unknown
+    density_gbit: null
+    common_module_capacities: [2x16GB, 2x24GB, 2x32GB, 2x48GB]
+    typical_strengths: [Useful fallback if kit behavior resembles Hynix]
+    typical_weaknesses: [Unconfirmed IC]
+    frequency_behavior: Fallback only.
+    timing_behavior: Uses broad Hynix-like ranges.
+    voltage_behavior: Conservative Hynix-like.
+    thermal_behavior: Watch refresh at high temperature.
+    efficiency_factor: 1.05
+    thermal_factor: 1.08
+    confidence: low
+    timing_ranges: *hynix_m_ranges
+    voltage_ranges:
+      daily_typical: {VDD: [1.30, 1.45], VDDQ: [1.30, 1.45]}
+      aggressive: {VDD: [1.46, 1.55], VDDQ: [1.46, 1.55]}
+    sources: *community_sources
+  unknown_samsung_like:
+    vendor: Unknown/Samsung-like
+    generation_or_revision: Samsung-like unknown
+    density_gbit: null
+    common_module_capacities: [2x16GB, 2x32GB]
+    typical_strengths: [Fallback]
+    typical_weaknesses: [Unconfirmed IC]
+    frequency_behavior: Conservative.
+    timing_behavior: Broad Samsung-like ranges.
+    voltage_behavior: Conservative.
+    thermal_behavior: Standard.
+    efficiency_factor: 1.08
+    thermal_factor: 1.08
+    confidence: low
+    timing_ranges:
+      by_frequency: {}
+    voltage_ranges:
+      daily_typical: {VDD: [1.25, 1.40], VDDQ: [1.25, 1.40]}
+      aggressive: {VDD: [1.41, 1.50], VDDQ: [1.41, 1.50]}
+    sources: []
+  unknown_micron_like:
+    vendor: Unknown/Micron-like
+    generation_or_revision: Micron-like unknown
+    density_gbit: null
+    common_module_capacities: [OEM JEDEC, 2x16GB, 2x24GB, 2x32GB]
+    typical_strengths: [Fallback]
+    typical_weaknesses: [Unconfirmed IC]
+    frequency_behavior: Conservative.
+    timing_behavior: Broad Micron-like ranges.
+    voltage_behavior: Conservative.
+    thermal_behavior: Standard.
+    efficiency_factor: 1.1
+    thermal_factor: 1.1
+    confidence: low
+    timing_ranges:
+      by_frequency: {}
+    voltage_ranges:
+      daily_typical: {VDD: [1.10, 1.35], VDDQ: [1.10, 1.35]}
+      aggressive: {VDD: [1.36, 1.45], VDDQ: [1.36, 1.45]}
+    sources: []
+  jedec_generic:
+    vendor: Generic
+    generation_or_revision: JEDEC DDR5 baseline
+    density_gbit: null
+    common_module_capacities: [Any DDR5 UDIMM/SODIMM/RDIMM class]
+    typical_strengths: [Safe baseline comparison]
+    typical_weaknesses: [Not a tuning die profile]
+    frequency_behavior: DDR5 baseline starts at 4800 MT/s in common client platforms.
+    timing_behavior: Use unknown unless explicit ranges are entered.
+    voltage_behavior: DDR5 nominal VDD/VDDQ/VPP is 1.1/1.1/1.8.
+    thermal_behavior: Platform and module dependent.
+    efficiency_factor: 1.0
+    thermal_factor: 1.0
+    confidence: high
+    timing_ranges:
+      by_frequency:
+        "4800":
+          tCL: {tight: [38, 40], moderate: [42, 46], loose: [48, 52], confidence: medium}
+          tRCD: {tight: [38, 40], moderate: [42, 46], loose: [48, 52], confidence: medium}
+          tRP: {tight: [38, 40], moderate: [42, 46], loose: [48, 52], confidence: medium}
+    voltage_ranges:
+      daily_typical: {VDD: [1.10, 1.25], VDDQ: [1.10, 1.25], VPP: [1.80, 1.80]}
+      aggressive: {VDD: [1.26, 1.35], VDDQ: [1.26, 1.35]}
+    sources:
+      - url: https://www.micron.com/products/memory/dram-components/ddr5-sdram
+        source_name: Micron DDR5 technology overview
+        source_tier: 1
+        confidence: high
+        notes: DDR5 voltage and data-rate baseline.
+        date_checked: "2026-05-17"

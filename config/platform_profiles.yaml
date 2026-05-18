@@ -1,0 +1,107 @@
+platform_profiles:
+  alder_lake_ddr5:
+    display_name: Intel Alder Lake DDR5
+    vendor: Intel
+    supported_notes: [DDR5 support varies by CPU, board, DIMM count, and BIOS.]
+    known_memory_modes: [Gear 2 commonly used for DDR5 overclocking, Gear 4 exists on some platforms]
+    common_frequency_zones: [4800 JEDEC, 5600-6400 practical, 6800+ board/IMC dependent]
+    imc_limit_notes: [Non-K or lower-bin CPUs may have reduced memory voltage/control flexibility.]
+    voltage_controls: [VCCSA, CPU_VDDQ / TX_VDDQ, MC_Voltage / VDD2, DRAM VDD, DRAM VDDQ]
+    quirks:
+      - High DDR5 speeds are usually limited by the CPU memory controller and motherboard topology before raw DIMM capability.
+      - Two-slot and one-DIMM-per-channel boards usually train higher than four-DIMM layouts.
+      - Final tWR and tWTR values may be produced by controls named tWRPRE, tWTP, tWRRD, or vendor equivalents.
+    timing_alias_behavior: [BIOS vendors may split tRCD into read/write and expose tWRPRE/tWRRD controls.]
+    recommended_testing_notes: [This app does not validate stability; use independent memory stress tests.]
+    sources: &intel_sources
+      - url: https://skatterbencher.com/2021/11/04/alder-lake-overclocking-whats-new/
+        source_name: SkatterBencher Alder Lake OC overview
+        source_tier: 2
+        confidence: medium
+        notes: Platform voltage/control context.
+        date_checked: "2026-05-17"
+      - url: https://software.intel.com/content/dam/www/central-libraries/us/en/documents/xmp-memory-for-intel-core-processors-datasheet-ddr5.pdf
+        source_name: Intel XMP DDR5 data sheet
+        source_tier: 1
+        confidence: high
+        notes: Certified XMP examples and Intel DDR5 OC context.
+        date_checked: "2026-05-17"
+  raptor_lake_ddr5:
+    display_name: Intel Raptor Lake DDR5
+    vendor: Intel
+    supported_notes: [DDR5 tuning depends heavily on CPU IMC, Z690/Z790 board, and DIMM topology.]
+    known_memory_modes: [Gear 2 common for high-frequency DDR5]
+    common_frequency_zones: [5600 JEDEC-ish, 6400-7600 tuned, 8000+ strong board/IMC]
+    imc_limit_notes: [High-frequency scaling improves on many samples but remains silicon lottery.]
+    voltage_controls: [VCCSA, CPU_VDDQ / TX_VDDQ, MC_Voltage / VDD2, DRAM VDD, DRAM VDDQ]
+    quirks:
+      - Very high MT/s usually favors 1DPC and two-slot boards.
+      - Four-DIMM or heavy dual-rank setups usually reduce frequency headroom.
+      - CPU VDDQ, TX VDDQ, and VDD2/MC voltage names vary by BIOS vendor.
+    timing_alias_behavior: [tWRRD/tWTR and tWRPRE/tWR relationships can be BIOS-dependent.]
+    recommended_testing_notes: [Validate memory controller and DIMM stability separately.]
+    sources: *intel_sources
+  arrow_lake_ddr5:
+    display_name: Intel Arrow Lake DDR5
+    vendor: Intel
+    supported_notes: [Newer platform; keep board BIOS and memory QVL context in mind.]
+    known_memory_modes: [High-frequency DDR5 support is board and IMC dependent]
+    common_frequency_zones: [6400+, 8000+ on suitable boards]
+    imc_limit_notes: [Public tuning data is still evolving.]
+    voltage_controls: [CPU_VDDQ / TX_VDDQ, MC_Voltage / VDD2, DRAM VDD, DRAM VDDQ]
+    quirks:
+      - Treat high-frequency claims as board, BIOS, and CPU-sample specific.
+      - Detailed daily voltage guidance is still less mature than Alder/Raptor Lake community data.
+    timing_alias_behavior: [Vendor BIOS naming differences remain important.]
+    recommended_testing_notes: [Use conservative ranges until more platform-specific data is added.]
+    sources: *intel_sources
+  ryzen_am5_zen4:
+    display_name: AMD Ryzen AM5 Zen 4
+    vendor: AMD
+    supported_notes: [AM5 is DDR5-only; EXPO profiles are overclocking profiles.]
+    known_memory_modes: [MCLK memory clock, UCLK memory controller clock, FCLK fabric clock, UCLK=MCLK 1:1, UCLK=MCLK/2 1:2]
+    common_frequency_zones: [DDR5-6000 common target, 6200-6400 sample dependent, higher speeds often use divider tradeoffs]
+    imc_limit_notes: [DDR5-6000 is a widely cited Zen 4 sweet spot; above that, latency tradeoffs can appear.]
+    voltage_controls: [SoC, VDDIO_MEM, VDDP, DRAM VDD, DRAM VDDQ]
+    quirks:
+      - MT/s is double data rate; real memory clock is MT/s divided by two.
+      - DDR5-6000 to 6400 is the common low-latency zone when UCLK remains 1:1.
+      - Higher MT/s can move UCLK to 1:2, trading latency for bandwidth.
+      - Prefer direct tWR, tWTRS, and tWTRL fields when exposed; do not map Intel tertiary names one-to-one.
+      - Keep SoC voltage conservative; high SoC is CPU-side pressure, not DIMM voltage.
+    timing_alias_behavior: [ZenTimings names may differ from motherboard BIOS labels.]
+    recommended_testing_notes: [Use external memory stress testing; this app only explains and compares settings.]
+    sources: &amd_sources
+      - url: https://www.amd.com/pt/products/processors/technologies/expo.html
+        source_name: AMD EXPO overview
+        source_tier: 1
+        confidence: high
+        notes: AMD positions EXPO as DDR5 memory overclocking profiles for AM5.
+        date_checked: "2026-05-17"
+      - url: https://www.techpowerup.com/298436/amd-confirms-ddr5-6000-as-sweetspot-memory-oc-frequency-for-ryzen-7000
+        source_name: TechPowerUp report of AMD DDR5-6000 sweet spot AMA
+        source_tier: 2
+        confidence: medium
+        notes: Reports Robert Hallock comments on DDR5-6000 and clocks.
+        date_checked: "2026-05-17"
+      - url: https://download.amd.com/documents/AMD-Ryzen-Processor-and-AMD-Ryzen-Master-Overclocking-Users-Guide.pdf
+        source_name: AMD Ryzen Master Overclocking User Guide
+        source_tier: 1
+        confidence: high
+        notes: AMD voltage/frequency overclocking caution and control names.
+        date_checked: "2026-05-17"
+  ryzen_am5_zen5:
+    display_name: AMD Ryzen AM5 Zen 5
+    vendor: AMD
+    supported_notes: [DDR5-only AM5 platform with similar clock-domain concepts to Zen 4.]
+    known_memory_modes: [MCLK, UCLK, FCLK, 1:1 and 1:2 UCLK/MCLK behavior]
+    common_frequency_zones: [6000-6400 common low-latency zone, higher speeds workload/platform dependent]
+    imc_limit_notes: [Some CPUs improve high-speed behavior, but board/BIOS/IMC still matter.]
+    voltage_controls: [SoC, VDDIO_MEM, VDDP, DRAM VDD, DRAM VDDQ]
+    quirks:
+      - UCLK/MCLK divider behavior remains central to latency.
+      - High-bandwidth 8000+ MT/s profiles are workload dependent, not universally lower latency.
+      - Keep SoC voltage interpretation conservative.
+    timing_alias_behavior: [BIOS and ZenTimings labels may differ.]
+    recommended_testing_notes: [Validate stability externally.]
+    sources: *amd_sources

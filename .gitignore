@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pytest_tmp/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+node_modules/
+frontend/dist/
+frontend/.vite/
+.env
+.env.*
+
+# Local-only research collection artifacts.
+research/raw_notes/
+research/local_sources/
+research/scratch/
+research/*.tmp
+research/generated_database_review.md
+
+# Local project notes and research working docs.
+docs/local_notes/

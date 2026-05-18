@@ -1,0 +1,6 @@
+fastapi>=0.115
+starlette>=0.40
+uvicorn[standard]>=0.30
+pydantic>=2.8
+pyyaml>=6.0
+python-multipart>=0.0.9

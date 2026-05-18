@@ -1,0 +1,350 @@
+timings:
+  tCL:
+    display_name: CAS Latency
+    aliases: [CL, CAS, CAS Latency]
+    category: primary
+    definition: Delay from read command to first data availability.
+    performance_relevance: Strongly affects timing-derived first-word latency.
+    stability_relevance: Often voltage and IC quality sensitive.
+    importance: high
+    lower_is_better: true
+  tRCD:
+    display_name: Row to Column Delay
+    aliases: [tRCD]
+    category: primary
+    definition: Delay between activating a row and issuing column access when split read/write values are unavailable.
+    performance_relevance: Important for row activation paths.
+    stability_relevance: Usually harder to tighten than tCL on DDR5.
+    importance: high
+    lower_is_better: true
+  tRCDRD:
+    display_name: RCD Read
+    aliases: [tRCDRD, tRCD Read]
+    category: primary
+    definition: Delay from row activate to read command.
+    performance_relevance: Drives read row-miss estimate with tCL and tRP.
+    stability_relevance: Common limiting primary on DDR5.
+    importance: high
+    lower_is_better: true
+  tRCDWR:
+    display_name: RCD Write
+    aliases: [tRCDWR, tRCD Write]
+    category: primary
+    definition: Delay from row activate to write command.
+    performance_relevance: Mostly write-path relevant.
+    stability_relevance: Often can differ from tRCDRD depending on platform.
+    importance: medium
+    lower_is_better: true
+  tRP:
+    display_name: Row Precharge
+    aliases: [tRP]
+    category: primary
+    definition: Time to precharge a bank before activating another row.
+    performance_relevance: Part of row-miss timing-derived estimate.
+    stability_relevance: Primary stability limiter on many profiles.
+    importance: high
+    lower_is_better: true
+  tRAS:
+    display_name: Row Active Time
+    aliases: [tRAS]
+    category: primary
+    definition: Minimum time a row remains active before precharge.
+    performance_relevance: Workload dependent; not a direct application latency number.
+    stability_relevance: Too low can violate row operation requirements.
+    importance: medium
+    lower_is_better: depends
+  tRC:
+    display_name: Row Cycle Time
+    aliases: [tRC]
+    category: primary
+    definition: Activate-to-activate cycle for the same bank, commonly related to tRAS + tRP.
+    performance_relevance: Row-cycle bound access pattern relevance.
+    stability_relevance: Often derived or constrained by primaries.
+    importance: medium
+    lower_is_better: true
+  tRFC:
+    display_name: Refresh Cycle Time
+    aliases: [tRFC, tRFC1]
+    category: refresh
+    definition: Time after all-bank refresh before refreshed banks can resume normal access.
+    performance_relevance: Large refresh penalty; visible in timing-derived refresh estimate.
+    stability_relevance: Too low can create memory errors, especially with heat.
+    importance: high
+    lower_is_better: true
+  tRFC2:
+    display_name: Fine Granularity Refresh 2x
+    aliases: [tRFC2]
+    category: refresh
+    definition: Alternate refresh-cycle timing for fine granularity refresh modes.
+    performance_relevance: Platform and refresh mode dependent.
+    stability_relevance: Density and temperature sensitive.
+    importance: medium
+    lower_is_better: true
+  tRFCsb:
+    display_name: Same Bank Refresh Cycle
+    aliases: [tRFCsb, tRFCsb1]
+    category: refresh
+    definition: DDR5 same-bank refresh duration affecting only the targeted same bank across bank groups.
+    performance_relevance: DDR5-specific refresh behavior can reduce average lockout versus all-bank refresh.
+    stability_relevance: Density and heat sensitive.
+    importance: medium
+    lower_is_better: true
+  tREFI:
+    display_name: Refresh Interval
+    aliases: [tREFI, tREFIx9]
+    category: refresh
+    definition: Average interval between refresh commands.
+    performance_relevance: Higher values reduce refresh frequency but increase retention risk.
+    stability_relevance: Heat sensitive; high values need stability testing.
+    importance: high
+    lower_is_better: false
+    safe_notes: [High tREFI is not automatically safe; DIMM temperature matters.]
+  tRRDS:
+    display_name: Activate to Activate Short
+    aliases: [tRRDS, tRRD_S]
+    category: secondary
+    definition: Delay between activates to different bank groups in the short path.
+    performance_relevance: Affects bank-level parallelism.
+    stability_relevance: Too low can hurt training or stability.
+    importance: medium
+    lower_is_better: true
+  tRRDL:
+    display_name: Activate to Activate Long
+    aliases: [tRRDL, tRRD_L]
+    category: secondary
+    definition: Delay between activates in a long/same-bank-group related path.
+    performance_relevance: Bank group scheduling relevance.
+    stability_relevance: Platform and density dependent.
+    importance: medium
+    lower_is_better: true
+  tFAW:
+    display_name: Four Activate Window
+    aliases: [tFAW]
+    category: secondary
+    definition: Window limiting how closely multiple activate commands may occur.
+    performance_relevance: Affects parallel activation behavior.
+    stability_relevance: Too low can be unstable or counterproductive.
+    importance: medium
+    lower_is_better: true
+  tWR:
+    display_name: Write Recovery
+    aliases: [tWR, Write Recovery]
+    category: secondary
+    definition: Final write recovery delay before a precharge-related operation can safely follow a write.
+    performance_relevance: Scored as the final displayed tWR value, even when the BIOS uses a different control name.
+    stability_relevance: Too low can corrupt write recovery.
+    importance: medium
+    lower_is_better: true
+    dependency_notes: [On Intel boards, tWR is often not the direct editable register; adjust tWRPRE, tWTP, or the board vendor equivalent and re-check the final displayed tWR. On AM5, direct tWR may be available, but final displayed tWR remains the value to compare.]
+    related_timings: [tWRPRE]
+  tWTRS:
+    display_name: Write to Read Short
+    aliases: [tWTRS, tWTR_S]
+    category: secondary
+    definition: Final short write-to-read turn-around delay.
+    performance_relevance: Scored as the final displayed tWTRS value, regardless of which BIOS control produced it.
+    stability_relevance: Often controlled indirectly on some platforms.
+    importance: medium
+    lower_is_better: true
+    dependency_notes: [On Intel boards, tWTRS may be moved through tWRRD or vendor write-to-read controls; on AM5 it may be direct or derived. Change the available BIOS control, then compare the final tWTRS value.]
+  tWTRL:
+    display_name: Write to Read Long
+    aliases: [tWTRL, tWTR_L]
+    category: secondary
+    definition: Final long write-to-read turn-around delay.
+    performance_relevance: Scored as the final displayed tWTRL value, regardless of which BIOS control produced it.
+    stability_relevance: Platform formula and board dependent.
+    importance: medium
+    lower_is_better: true
+    dependency_notes: [On Intel boards, tWTRL may be affected by tWRRD or vendor write-to-read controls; on AM5 it may be direct or derived. Compare the final displayed tWTRL value.]
+  tRTP:
+    display_name: Read to Precharge
+    aliases: [tRTP]
+    category: secondary
+    definition: Delay from read command to precharge.
+    performance_relevance: Secondary access-path relevance.
+    stability_relevance: Too low can fail stability tests.
+    importance: medium
+    lower_is_better: true
+  tCWL:
+    display_name: CAS Write Latency
+    aliases: [tCWL, CWL]
+    category: secondary
+    definition: Delay from write command to write data.
+    performance_relevance: Write path latency.
+    stability_relevance: Often coupled to memory ratio and platform behavior.
+    importance: medium
+    lower_is_better: true
+  tCKE:
+    display_name: Clock Enable Minimum Pulse
+    aliases: [tCKE, tCKEmin]
+    category: secondary
+    definition: Minimum CKE pulse width or power-state timing.
+    performance_relevance: Low direct impact for most manual tuning.
+    stability_relevance: Platform training dependent.
+    importance: low
+    lower_is_better: true
+  tMOD:
+    display_name: Mode Register Set Delay
+    aliases: [tMOD]
+    category: secondary
+    definition: Delay after mode register command before normal commands.
+    performance_relevance: Low direct runtime impact.
+    stability_relevance: Training and initialization related.
+    importance: low
+    lower_is_better: true
+  tXP:
+    display_name: Exit Power Down
+    aliases: [tXP]
+    category: secondary
+    definition: Delay to exit power-down state.
+    performance_relevance: Power-state transition relevance.
+    stability_relevance: Low unless power states are active.
+    importance: low
+    lower_is_better: true
+  tXS:
+    display_name: Exit Self Refresh
+    aliases: [tXS]
+    category: secondary
+    definition: Delay to exit self-refresh.
+    performance_relevance: Low for active tuning.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tXSDLL:
+    display_name: Exit Self Refresh DLL
+    aliases: [tXSDLL]
+    category: secondary
+    definition: Exit self-refresh timing when DLL-related behavior is exposed.
+    performance_relevance: Low direct tuning impact.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tWRRD:
+    display_name: Write to Read Delay
+    aliases: [tWRRD]
+    category: tertiary
+    definition: Platform-exposed write-to-read delay control or family of controls.
+    performance_relevance: Useful mostly as the BIOS lever that can move final tWTR values on some boards.
+    stability_relevance: Too low may cause boot or training failures.
+    importance: medium
+    lower_is_better: true
+    dependency_notes: [Do not compare tWRRD across Intel and AMD as if it were always the same final timing. Use it to adjust the board, then score the final displayed tWTRS/tWTRL values.]
+  tWRRDSG:
+    display_name: Write to Read Same Group
+    aliases: [tWRRDSG]
+    category: tertiary
+    definition: Write-to-read delay in same-group path.
+    performance_relevance: Tertiary scheduler effect.
+    stability_relevance: Board and BIOS dependent.
+    importance: low
+    lower_is_better: true
+  tWRRDDG:
+    display_name: Write to Read Different Group
+    aliases: [tWRRDDG]
+    category: tertiary
+    definition: Write-to-read delay in different-group path.
+    performance_relevance: Tertiary scheduler effect.
+    stability_relevance: Board and BIOS dependent.
+    importance: low
+    lower_is_better: true
+  tWRWR:
+    display_name: Write to Write Delay
+    aliases: [tWRWR]
+    category: tertiary
+    definition: Delay between write commands in exposed tertiary timing set.
+    performance_relevance: Tertiary write scheduling.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tWRWRSG:
+    display_name: Write to Write Same Group
+    aliases: [tWRWRSG]
+    category: tertiary
+    definition: Same-group write-to-write delay.
+    performance_relevance: Tertiary write scheduling.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tWRWRDG:
+    display_name: Write to Write Different Group
+    aliases: [tWRWRDG]
+    category: tertiary
+    definition: Different-group write-to-write delay.
+    performance_relevance: Tertiary write scheduling.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tRDRD:
+    display_name: Read to Read Delay
+    aliases: [tRDRD]
+    category: tertiary
+    definition: Delay between read commands in exposed tertiary timing set.
+    performance_relevance: Tertiary read scheduling.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tRDRDSG:
+    display_name: Read to Read Same Group
+    aliases: [tRDRDSG]
+    category: tertiary
+    definition: Same-group read-to-read delay.
+    performance_relevance: Tertiary read scheduling.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tRDRDDG:
+    display_name: Read to Read Different Group
+    aliases: [tRDRDDG]
+    category: tertiary
+    definition: Different-group read-to-read delay.
+    performance_relevance: Tertiary read scheduling.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tRDRDSD:
+    display_name: Read to Read Same DIMM
+    aliases: [tRDRDSD]
+    category: tertiary
+    definition: Same-DIMM read-to-read delay exposed by some BIOSes.
+    performance_relevance: Tertiary scheduler effect.
+    stability_relevance: DIMM/rank dependent.
+    importance: low
+    lower_is_better: true
+  tRDRDDD:
+    display_name: Read to Read Different DIMM
+    aliases: [tRDRDDD]
+    category: tertiary
+    definition: Different-DIMM read-to-read delay exposed by some BIOSes.
+    performance_relevance: Tertiary scheduler effect.
+    stability_relevance: More relevant with multiple DIMMs/ranks.
+    importance: low
+    lower_is_better: true
+  tWRPRE:
+    display_name: Write Precharge
+    aliases: [tWRPRE]
+    category: tertiary
+    definition: Write-precharge related control that may determine final tWR on some BIOSes.
+    performance_relevance: Useful mostly as the BIOS lever that can move final tWR.
+    stability_relevance: Too low may break write recovery.
+    importance: medium
+    lower_is_better: true
+    dependency_notes: [Intel users may need to adjust tWRPRE or a vendor equivalent to change final tWR. AMD users may have direct tWR or a derived field. Compare the final displayed tWR value.]
+  tRDPRE:
+    display_name: Read Precharge
+    aliases: [tRDPRE]
+    category: tertiary
+    definition: Read-precharge related control.
+    performance_relevance: Indirect read-to-precharge relevance.
+    stability_relevance: Platform dependent.
+    importance: low
+    lower_is_better: true
+  tPPD:
+    display_name: Precharge Power Down
+    aliases: [tPPD]
+    category: tertiary
+    definition: Vendor/platform-specific precharge power-down timing if exposed.
+    performance_relevance: Usually low direct tuning value.
+    stability_relevance: BIOS dependent.
+    importance: low
+    lower_is_better: true
