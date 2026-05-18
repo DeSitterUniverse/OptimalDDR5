@@ -1,6 +1,6 @@
 # OptimalDDR5
 
-OptimalDDR5 is a local DDR5-only RAM timing analyzer. It behaves like a practical tuning notebook and timing microscope: enter or import a DDR5 profile from HWiNFO .LOG report, convert cycles to nanoseconds, compare timings against OC limits, inspect predicted power consumption, and estimate single-DIMM heat risk.
+OptimalDDR5 is a DDR5 RAM timing analyzer. It's a practical tuning notebook, timing analyzer and guide for general OC limits: enter or import a DDR5 profile from HWiNFO .LOG report, convert cycles to nanoseconds, compare timings against OC limits, inspect predicted power consumption, and estimate single-DIMM heat risk.
 
 ## Features
 
@@ -22,9 +22,9 @@ OptimalDDR5 is a local DDR5-only RAM timing analyzer. It behaves like a practica
 - `frontend/`: React/Vite UI for profile entry, timing inspection, voltage review, and heat output.
 - `tests/`: focused tests for formulas, YAML loading, import behavior, evaluator rules, and power estimates.
 
-## Edit The Database
+## Database
 
-Change YAML files in `config/`:
+Edit YAML files in `config/`:
 
 - `timing_definitions.yaml`: timing definitions, categories, aliases, dependency notes.
 - `timing_aliases.yaml`: import and UI aliases mapped to canonical timing names.
