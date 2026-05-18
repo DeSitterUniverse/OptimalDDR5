@@ -1,8 +1,6 @@
 # OptimalDDR5
 
-OptimalDDR5 is a local DDR5-only RAM timing analyzer. It behaves like a practical tuning notebook and timing microscope: enter or import a DDR5 profile, convert cycles to nanoseconds, compare timings against editable peer ranges, inspect voltage pressure, and estimate single-DIMM heat risk.
-
-It does not apply BIOS settings, run stress tests, or claim stability.
+OptimalDDR5 is a local DDR5-only RAM timing analyzer. It behaves like a practical tuning notebook and timing microscope: enter or import a DDR5 profile from HWiNFO .LOG report, convert cycles to nanoseconds, compare timings against OC limits, inspect predicted power consumption, and estimate single-DIMM heat risk.
 
 ## Features
 
@@ -44,4 +42,4 @@ Use the import button and select a `.LOG` file. The parser looks for a Memory se
 
 ## Source Warning
 
-The database combines official DDR5/platform documentation with overclocking guides and community experience. Community timing and power ranges are peer ranges, not guarantees. CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
+The database combines official DDR5/platform documentation with research and overclocking guides and community experience. Nothing is guaranteed. CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
