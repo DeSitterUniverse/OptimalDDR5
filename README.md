@@ -1,8 +1,6 @@
 # OptimalDDR5
 
-OptimalDDR5 is a local DDR5-only RAM timing analyzer. It behaves like a practical tuning notebook and timing microscope: enter or import a DDR5 profile, convert cycles to nanoseconds, compare timings against editable peer ranges, inspect voltage pressure, and estimate single-DIMM heat risk.
-
-It does not apply BIOS settings, run stress tests, or claim stability.
+OptimalDDR5 is a DDR5 RAM timing analyzer. It's a practical tuning notebook, timing analyzer and guide for general OC limits: enter or import a DDR5 profile from HWiNFO .LOG report, convert cycles to nanoseconds, compare timings against OC limits, inspect predicted power consumption, and estimate single-DIMM heat risk.
 
 ## Features
 
@@ -24,60 +22,9 @@ It does not apply BIOS settings, run stress tests, or claim stability.
 - `src/optimalddr5/`: Python reference implementation and validation tests for the same formulas and data model.
 - `tests/`: focused tests for formulas, YAML loading, import behavior, evaluator rules, and power estimates.
 
-## Run Locally
+## Database
 
-Install frontend dependencies:
-
-```powershell
-cd path\to\OptimalDDR5\frontend
-npm install
-```
-
-Start the Vite dev server:
-
-```powershell
-npm.cmd run dev -- --host 127.0.0.1 --port 5174 --strictPort
-```
-
-Open `http://127.0.0.1:5174/`.
-
-What the commands do:
-
-- `cd path\to\OptimalDDR5\frontend` enters the static web app folder.
-- `npm install` installs the JavaScript dependencies listed in `frontend/package.json`.
-- `npm.cmd run dev -- --host 127.0.0.1 --port 5174 --strictPort` starts the local Vite server on a fixed localhost port.
-
-The app is client-side/static. It does not require the FastAPI backend for normal use.
-
-To verify the frontend production build:
-
-```powershell
-npm.cmd run build
-```
-
-To run the Python reference tests:
-
-```powershell
-cd path\to\OptimalDDR5
-python -m pip install -r requirements-dev.txt
-python -m pip install -e . --no-build-isolation
-python -m pytest
-```
-
-## Deployment Notes
-
-OptimalDDR5 is now a static Vite app. Vercel, Netlify, Cloudflare Pages, GitHub Pages, or any static host can serve it without a Python service.
-
-For Vercel:
-
-- Framework preset: Vite.
-- Root directory: `frontend`.
-- Build command: `npm run build`.
-- Output directory: `dist`.
-
-## Edit The Database
-
-Change YAML files in `config/`:
+Edit YAML files in `config/`:
 
 - `timing_definitions.yaml`: timing definitions, categories, aliases, dependency notes.
 - `timing_aliases.yaml`: import and UI aliases mapped to canonical timing names.
@@ -90,7 +37,6 @@ Change YAML files in `config/`:
 Regenerate the static JSON after editing YAML:
 
 ```powershell
-cd path\to\OptimalDDR5
 python scripts\build_static_data.py
 ```
 
@@ -102,6 +48,4 @@ Use the import button and select a `.LOG` file. The parser looks for a Memory se
 
 ## Source Warning
 
-The database combines official DDR5/platform documentation with overclocking guides and community experience. Community timing and power ranges are peer ranges, not guarantees. CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
-
-Future improvements should add more board-specific aliases, richer HWiNFO exports, user-editable profiles in persistent storage, sensor import, and more source-backed die/frequency buckets.
+The database combines official DDR5/platform documentation with research and overclocking guides and community experience. Nothing is guaranteed. CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
