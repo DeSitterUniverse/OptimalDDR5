@@ -48,10 +48,13 @@ def parse_hwinfo_log(path: str | Path, base_profile: MemoryProfile | None = None
         flags=re.IGNORECASE,
     )
     if tuple_match:
+        trcd = int(tuple_match.group(2))
         timings.update(
             {
                 "tCL": int(tuple_match.group(1)),
-                "tRCD": int(tuple_match.group(2)),
+                "tRCD": trcd,
+                "tRCDRD": timings.get("tRCDRD", trcd),
+                "tRCDWR": timings.get("tRCDWR", trcd),
                 "tRP": int(tuple_match.group(3)),
                 "tRAS": int(tuple_match.group(4)),
             }
@@ -109,13 +112,13 @@ def predict_die_id(memory_text: str) -> str | None:
     if "samsung" in normalized and density == 16384:
         return "samsung_16g_early"
     if "samsung" in normalized:
-        return "unknown_samsung_like"
-    if "hynix" in normalized and density == 16384:
-        return "unknown_hynix_like"
+        return "samsung_16g_early"
+    if "hynix" in normalized and density == 24576:
+        return "hynix_24g_m_die"
     if "hynix" in normalized:
-        return "unknown_hynix_like"
+        return "hynix_16g_m_die"
     if "micron" in normalized:
-        return "unknown_micron_like"
+        return "micron_16g_early"
     return None
 
 

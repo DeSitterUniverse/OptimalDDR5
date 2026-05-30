@@ -35,13 +35,13 @@ def test_power_model_is_die_calibrated_and_single_dimm_heat_based():
         "capacity_exponent": 0.7,
         "effective_voltage_weights": {"VDD": 0.6, "VDDQ": 0.4},
         "die_power_profiles": {
-            "samsung_16g_b_die": {"peak_watts_per_dimm": 8.0, "reference_voltage": 1.362, "reference_capacity_gb_per_dimm": 16},
+            "samsung_16g_early": {"peak_watts_per_dimm": 8.0, "reference_voltage": 1.362, "reference_capacity_gb_per_dimm": 16},
             "hynix_16g_a_die": {"peak_watts_per_dimm": 3.7, "reference_voltage": 1.4, "reference_capacity_gb_per_dimm": 16},
         },
         "heat_thresholds_w_per_dimm": {"moderate_min": 4.0, "high_min": 6.0, "extreme_min": 8.0},
     }
-    samsung = estimate_power(MemoryProfile(voltages={"VDD": 1.37, "VDDQ": 1.35}), {"die_id": "samsung_16g_b_die"}, cfg)
-    samsung_low = estimate_power(MemoryProfile(voltages={"VDD": 1.2, "VDDQ": 1.2}), {"die_id": "samsung_16g_b_die"}, cfg)
+    samsung = estimate_power(MemoryProfile(voltages={"VDD": 1.37, "VDDQ": 1.35}), {"die_id": "samsung_16g_early"}, cfg)
+    samsung_low = estimate_power(MemoryProfile(voltages={"VDD": 1.2, "VDDQ": 1.2}), {"die_id": "samsung_16g_early"}, cfg)
     hynix = estimate_power(MemoryProfile(voltages={"VDD": 1.4, "VDDQ": 1.4}), {"die_id": "hynix_16g_a_die"}, cfg)
     assert samsung.estimated_power_per_dimm_watts == 8.0
     assert samsung.heat_level == "extreme"

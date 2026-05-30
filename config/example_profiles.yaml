@@ -12,7 +12,7 @@ profiles:
     timings: {tCL: 40, tRCD: 40, tRP: 40, tRAS: 77, tRC: 117, tRFC: 480}
   - profile_name: AMD AM5 DDR5-6000 CL30 Hynix-like example
     platform_id: ryzen_am5_zen4
-    die_id: unknown_hynix_like
+    die_id: hynix_16g_m_die
     mtps: 6000
     uclk_mclk_mode: UCLK=MCLK 1:1
     capacity_total_gb: 32
@@ -33,7 +33,7 @@ profiles:
     timings: {tCL: 34, tRCDRD: 44, tRCDWR: 44, tRP: 44, tRAS: 84, tRC: 128, tRFC: 600, tREFI: 65535}
   - profile_name: DDR5-6000 Samsung-like loose example
     platform_id: ryzen_am5_zen4
-    die_id: samsung_16g_b_die
+    die_id: samsung_16g_early
     mtps: 6000
     capacity_total_gb: 32
     dimm_count: 2

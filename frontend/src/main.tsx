@@ -19,6 +19,14 @@ const displayNames: Record<string, string> = {
   MC_Voltage: "MC_Voltage / VDD2",
   SoC: "SoC / IMC support"
 };
+const commonDieIds = new Set([
+  "hynix_16g_m_die",
+  "hynix_16g_a_die",
+  "hynix_24g_m_die",
+  "samsung_16g_early",
+  "micron_16g_early",
+  "jedec_generic"
+]);
 
 function App() {
   const [config, setConfig] = useState<ConfigData | null>(null);
@@ -81,7 +89,7 @@ function App() {
               <label>Example profile<select value={profile.profile_name} onChange={(e) => setProfile(config.example_profiles.find((p) => p.profile_name === e.target.value) ?? profile)}>{config.example_profiles.map((item) => <option key={item.profile_name}>{item.profile_name}</option>)}</select></label>
               <label>Profile name<input value={profile.profile_name} onChange={(e) => update({ profile_name: e.target.value })} /></label>
               <label>Platform<select value={profile.platform_id} onChange={(e) => update({ platform_id: e.target.value })}>{Object.entries(config.platform_profiles).map(([id, p]: any) => <option key={id} value={id}>{p.display_name}</option>)}</select></label>
-              <label>Die type<select value={profile.die_id} onChange={(e) => update({ die_id: e.target.value })}>{Object.entries(config.die_profiles).map(([id, p]: any) => <option key={id} value={id}>{p.vendor} {p.generation_or_revision}</option>)}</select></label>
+              <label>Die type<select value={profile.die_id} onChange={(e) => update({ die_id: e.target.value })}>{selectableDieEntries(config, profile.die_id).map(([id, p]: any) => <option key={id} value={id}>{p.vendor} {p.generation_or_revision}</option>)}</select></label>
               <label>MT/s<input type="number" value={profile.mtps} onChange={(e) => update({ mtps: Number(e.target.value) })} /></label>
               <label>Capacity GB<input type="number" value={profile.capacity_total_gb} onChange={(e) => update({ capacity_total_gb: Number(e.target.value) })} /></label>
               <label>DIMM count<input type="number" value={profile.dimm_count} onChange={(e) => update({ dimm_count: Number(e.target.value) })} /></label>
@@ -155,7 +163,7 @@ function Summary({ evaluation }: { evaluation: Evaluation | null }) {
 }
 
 function TimingTable({ evaluation }: { evaluation: Evaluation | null }) {
-  return <div className="table-wrap"><table><thead><tr><th>Timing</th><th>Cycles</th><th>ns</th><th>Target</th><th>Headroom</th><th>Class</th><th>Notes</th></tr></thead><tbody>{evaluation?.timing_results.map((r) => <tr key={r.timing_id}><td><strong>{formatTimingId(r.timing_id)}<InfoTip text={tooltipText(r)} /></strong><span>{r.display_name}</span></td><td>{fmt(r.cycles)}</td><td>{fmt(r.ns)}</td><td>{fmt(r.target_cycles)}</td><td>{headroomText(r.headroom_cycles)}</td><td><span className={`badge ${className(r.classification)}`}>{r.classification}</span></td><td><small>{(r.notes ?? []).join(" ")}</small></td></tr>)}</tbody></table></div>;
+  return <div className="table-wrap"><table><thead><tr><th>Timing</th><th>Cycles</th><th>ns</th><th>DDR5 floor</th><th>Die rec.</th><th>Headroom</th><th>Class</th><th>Notes</th></tr></thead><tbody>{evaluation?.timing_results.map((r) => <tr key={r.timing_id}><td><strong>{formatTimingId(r.timing_id)}<InfoTip text={tooltipText(r)} /></strong><span>{r.display_name}</span></td><td>{fmt(r.cycles)}</td><td>{fmt(r.ns)}</td><td>{fmt(r.floor_cycles)}</td><td>{fmt(r.recommended_cycles ?? r.target_cycles)}</td><td>{headroomText(r.headroom_cycles)}</td><td><span className={`badge ${className(r.classification)}`}>{r.classification}</span></td><td><small>{(r.notes ?? []).join(" ")}</small></td></tr>)}</tbody></table></div>;
 }
 
 function LatencyPanel({ evaluation }: { evaluation: Evaluation | null }) {
@@ -250,6 +258,13 @@ function visibleVoltageKeys(platformId: string) {
   if (platformId.includes("alder") || platformId.includes("raptor") || platformId.includes("arrow")) return [...baseVoltageKeys, ...intelVoltageKeys];
   if (platformId.includes("am5")) return [...baseVoltageKeys, ...amdVoltageKeys];
   return baseVoltageKeys;
+}
+
+function selectableDieEntries(config: ConfigData, selectedDieId: string) {
+  const entries = Object.entries(config.die_profiles).filter(([id]) => commonDieIds.has(id));
+  if (!selectedDieId || entries.some(([id]) => id === selectedDieId)) return entries;
+  const selected = config.die_profiles[selectedDieId];
+  return selected ? [[selectedDieId, selected], ...entries] : entries;
 }
 
 function summaryLabel(key: string) {

@@ -15,9 +15,11 @@ export type MemoryProfile = {
 
 export type ConfigData = {
   timing_definitions: Record<string, any>;
+  timing_aliases: Record<string, string>;
   die_profiles: Record<string, any>;
   platform_profiles: Record<string, any>;
   voltage_profiles: Record<string, any>;
+  power_model: Record<string, any>;
   example_profiles: MemoryProfile[];
   files: string[];
 };

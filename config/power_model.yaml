@@ -4,8 +4,8 @@ voltage_exponent: 2.0
 capacity_exponent: 0.7
 frequency_exponent: 0.0
 voltage_floors:
-  VDD: 1.10
-  VDDQ: 1.10
+  VDD: 1.1
+  VDDQ: 1.1
 effective_voltage_weights:
   VDD: 0.6
   VDDQ: 0.4
@@ -18,54 +18,28 @@ base_power_per_dimm_watts:
 die_power_profiles:
   hynix_16g_m_die:
     peak_watts_per_dimm: 3.6
-    reference_voltage: 1.40
+    reference_voltage: 1.4
     reference_capacity_gb_per_dimm: 16
     thermal_multiplier: 1.0
     notes: Hynix 16Gb desktop UDIMM calibration; observed peak tends to be much lower than Samsung at similar tuned voltages.
   hynix_16g_a_die:
     peak_watts_per_dimm: 3.7
-    reference_voltage: 1.40
+    reference_voltage: 1.4
     reference_capacity_gb_per_dimm: 16
     thermal_multiplier: 1.0
     notes: Hynix A-die/M-die are calibrated below 4 W per 16GB DIMM around 1.40 V.
   hynix_24g_m_die:
     peak_watts_per_dimm: 4.4
-    reference_voltage: 1.40
+    reference_voltage: 1.4
     reference_capacity_gb_per_dimm: 24
     thermal_multiplier: 1.0
     notes: Higher-capacity Hynix modules get capacity scaling but stay below Samsung heat calibration.
-  hynix_24g_a_die:
-    peak_watts_per_dimm: 4.4
-    reference_voltage: 1.40
-    reference_capacity_gb_per_dimm: 24
-    thermal_multiplier: 1.0
-  samsung_16g_b_die:
-    peak_watts_per_dimm: 8.0
-    reference_voltage: 1.362
-    reference_capacity_gb_per_dimm: 16
-    thermal_multiplier: 1.0
-    notes: Calibrated to roughly 1.37 VDD / 1.35 VDDQ peak heat reports; lower voltages scale down.
   samsung_16g_early:
     peak_watts_per_dimm: 8.0
     reference_voltage: 1.362
     reference_capacity_gb_per_dimm: 16
     thermal_multiplier: 1.0
     notes: Early Samsung DDR5 is less efficient than Hynix but should not be treated as 8 W at low-voltage XMP.
-  unknown_hynix_like:
-    peak_watts_per_dimm: 3.8
-    reference_voltage: 1.40
-    reference_capacity_gb_per_dimm: 16
-    thermal_multiplier: 1.0
-  unknown_samsung_like:
-    peak_watts_per_dimm: 8.0
-    reference_voltage: 1.362
-    reference_capacity_gb_per_dimm: 16
-    thermal_multiplier: 1.0
-  unknown_micron_like:
-    peak_watts_per_dimm: 4.6
-    reference_voltage: 1.35
-    reference_capacity_gb_per_dimm: 16
-    thermal_multiplier: 1.0
   default:
     peak_watts_per_dimm: 4.4
     reference_voltage: 1.35
@@ -76,5 +50,5 @@ heat_thresholds_w_per_dimm:
   high_min: 6.0
   extreme_min: 8.0
 notes:
-  - Heat is classified from one DIMM, not total kit watts.
-  - Timings are not used because their power effect is small compared with voltage, die, capacity, and module design.
+- Heat is classified from one DIMM, not total kit watts.
+- Timings are not used because their power effect is small compared with voltage, die, capacity, and module design.

@@ -1,6 +1,8 @@
 # OptimalDDR5
 
-OptimalDDR5 is a DDR5 RAM timing analyzer. It's a practical tuning notebook, timing analyzer and guide for general OC limits: enter or import a DDR5 profile from HWiNFO .LOG report, convert cycles to nanoseconds, compare timings against OC limits, inspect predicted power consumption, and estimate single-DIMM heat risk.
+OptimalDDR5 is a local DDR5-only RAM timing analyzer. It behaves like a practical tuning notebook and timing microscope: enter or import a DDR5 profile, convert cycles to nanoseconds, compare timings against editable peer ranges, inspect voltage pressure, and estimate single-DIMM heat risk.
+
+It does not apply BIOS settings, run stress tests, or claim stability.
 
 ## Features
 
@@ -15,16 +17,67 @@ OptimalDDR5 is a DDR5 RAM timing analyzer. It's a practical tuning notebook, tim
 
 ## Architecture
 
-- `src/optimalddr5/api/`: FastAPI endpoints for config loading, profile evaluation, and HWiNFO import.
-- `src/optimalddr5/core/`: timing math, voltage classification, power estimation, recommendations, and import parsing.
-- `src/optimalddr5/data/`: YAML loading and Pydantic validation.
+- `frontend/src/lib/static-engine.ts`: browser-side timing evaluation, HWiNFO import parsing, voltage comparison, and power estimation.
+- `frontend/public/data/`: compact JSON generated from the editable YAML database for static hosting.
 - `config/`: editable timing definitions, die profiles, voltage ranges, platform notes, power coefficients, and examples.
 - `frontend/`: React/Vite UI for profile entry, timing inspection, voltage review, and heat output.
+- `src/optimalddr5/`: Python reference implementation and validation tests for the same formulas and data model.
 - `tests/`: focused tests for formulas, YAML loading, import behavior, evaluator rules, and power estimates.
 
-## Database
+## Run Locally
 
-Edit YAML files in `config/`:
+Install frontend dependencies:
+
+```powershell
+cd path\to\OptimalDDR5\frontend
+npm install
+```
+
+Start the Vite dev server:
+
+```powershell
+npm.cmd run dev -- --host 127.0.0.1 --port 5174 --strictPort
+```
+
+Open `http://127.0.0.1:5174/`.
+
+What the commands do:
+
+- `cd path\to\OptimalDDR5\frontend` enters the static web app folder.
+- `npm install` installs the JavaScript dependencies listed in `frontend/package.json`.
+- `npm.cmd run dev -- --host 127.0.0.1 --port 5174 --strictPort` starts the local Vite server on a fixed localhost port.
+
+The app is client-side/static. It does not require the FastAPI backend for normal use.
+
+To verify the frontend production build:
+
+```powershell
+npm.cmd run build
+```
+
+To run the Python reference tests:
+
+```powershell
+cd path\to\OptimalDDR5
+python -m pip install -r requirements-dev.txt
+python -m pip install -e . --no-build-isolation
+python -m pytest
+```
+
+## Deployment Notes
+
+OptimalDDR5 is now a static Vite app. Vercel, Netlify, Cloudflare Pages, GitHub Pages, or any static host can serve it without a Python service.
+
+For Vercel:
+
+- Framework preset: Vite.
+- Root directory: `frontend`.
+- Build command: `npm run build`.
+- Output directory: `dist`.
+
+## Edit The Database
+
+Change YAML files in `config/`:
 
 - `timing_definitions.yaml`: timing definitions, categories, aliases, dependency notes.
 - `timing_aliases.yaml`: import and UI aliases mapped to canonical timing names.
@@ -34,7 +87,14 @@ Edit YAML files in `config/`:
 - `power_model.yaml`: effective voltage weights, die power calibration, capacity scaling, and heat thresholds.
 - `example_profiles.yaml`: built-in sample profiles.
 
-Restart or reload the app after edits. If validation fails, the API returns the file/key area instead of exposing a raw stack trace.
+Regenerate the static JSON after editing YAML:
+
+```powershell
+cd path\to\OptimalDDR5
+python scripts\build_static_data.py
+```
+
+Restart or reload the app after edits.
 
 ## HWiNFO Import
 
@@ -42,4 +102,6 @@ Use the import button and select a `.LOG` file. The parser looks for a Memory se
 
 ## Source Warning
 
-The database combines official DDR5/platform documentation with research and overclocking guides and community experience. Nothing is guaranteed. CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
+The database combines official DDR5/platform documentation with overclocking guides and community experience. Community timing and power ranges are peer ranges, not guarantees. CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
+
+Future improvements should add more board-specific aliases, richer HWiNFO exports, user-editable profiles in persistent storage, sensor import, and more source-backed die/frequency buckets.

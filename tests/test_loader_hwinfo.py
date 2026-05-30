@@ -70,6 +70,8 @@ Row: 1 [BANK 0/Controller0-DIMM1] - 16 GB PC5-44800 DDR5 SDRAM G.Skill F5-5600U3
     profile = parse_hwinfo_log(sample)
     assert profile.die_id == "samsung_16g_early"
     assert profile.command_rate == "2T"
+    assert profile.timings["tRCDRD"] == 36
+    assert profile.timings["tRCDWR"] == 36
     assert profile.timings["tRDRDSG"] == 14
     assert profile.timings["tWRWRDG"] == 8
     assert profile.timings["tWRRDSG"] == 64
@@ -91,3 +93,17 @@ Memory --------------------------------------------------------------------
     profile = parse_hwinfo_log(sample, base_profile=base)
     assert profile.voltages["VDD"] == 1.45
     assert profile.voltages["VDDQ"] == 1.44
+
+
+def test_hwinfo_die_prediction_uses_common_die_ids(tmp_path: Path):
+    sample = tmp_path / "hynix.LOG"
+    sample.write_text(
+        """
+Memory --------------------------------------------------------------------
+  SDRAM Manufacturer: SK hynix
+  Module Density: 24576 Mb
+""",
+        encoding="utf-8",
+    )
+    profile = parse_hwinfo_log(sample)
+    assert profile.die_id == "hynix_24g_m_die"
