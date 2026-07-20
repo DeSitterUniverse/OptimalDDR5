@@ -1,3 +1,5 @@
+Note: This is still under development and research/validation is not done.
+
 # OptimalDDR5
 
 OptimalDDR5 is a DDR5 RAM timing analyzer. It's a practical tuning notebook, timing analyzer and guide for general OC limits: enter or import a DDR5 profile from HWiNFO .LOG report, convert cycles to nanoseconds, compare timings against OC limits, inspect predicted power consumption, and estimate single-DIMM heat risk.
