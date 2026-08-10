@@ -37,6 +37,23 @@ class RangeBand(BaseModel):
     very_loose: tuple[float, float] | None = None
 
 
+class OverclockingLimits(BaseModel):
+    research_status: str
+    evidence_quality: str
+    retail_profile_max_mtps: int | None = None
+    documented_stable_max_mtps: int | None = None
+    documented_benchmark_max_mtps: int | None = None
+    daily_range_intel_mtps: tuple[int, int] | None = None
+    daily_range_am5_mtps: tuple[int, int] | None = None
+    tested_vdd_vddq_range: tuple[float, float] | None = None
+    voltage_scaling: str = ""
+    limit_basis: str = ""
+    community_consensus: str = ""
+    community_experiences: list[str] = Field(default_factory=list)
+    caveats: list[str] = Field(default_factory=list)
+    last_researched: str
+
+
 class TimingDefinition(BaseModel):
     timing_id: str
     display_name: str
@@ -71,6 +88,7 @@ class DieProfile(BaseModel):
     efficiency_factor: float = 1.0
     thermal_factor: float = 1.0
     confidence: str = "medium"
+    overclocking_limits: OverclockingLimits
     timing_ranges: dict[str, Any] = Field(default_factory=dict)
     voltage_ranges: dict[str, Any] = Field(default_factory=dict)
     sources: list[SourceRef] = Field(default_factory=list)
@@ -114,7 +132,7 @@ class MemoryProfile(BaseModel):
     profile_name: str = "Manual profile"
     platform_id: str = "ryzen_am5_zen4"
     bios_version: str | None = None
-    die_id: str = "jedec_generic"
+    die_id: str = "hynix_16g_m_die"
     mtps: int = Field(gt=0, default=6000)
     uclk_mclk_mode: str | None = None
     capacity_total_gb: int = Field(gt=0, default=32)

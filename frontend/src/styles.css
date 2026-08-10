@@ -199,6 +199,10 @@ input:focus, select:focus {
 
 .summary span, .metric-list span { color: #999188; }
 .summary strong, .metric-list strong { color: #f4efe8; text-align: right; }
+.research-metrics { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.source-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 16px; }
+.source-links strong { width: 100%; }
+.source-links a { color: #e39449; }
 
 .table-wrap {
   overflow: auto;

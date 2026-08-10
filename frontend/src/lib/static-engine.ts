@@ -12,15 +12,6 @@ const CONFIG_FILES = [
   "power_model",
   "example_profiles"
 ] as const;
-const COMMON_DIE_IDS = new Set([
-  "hynix_16g_m_die",
-  "hynix_16g_a_die",
-  "hynix_24g_m_die",
-  "samsung_16g_early",
-  "micron_16g_early",
-  "jedec_generic"
-]);
-
 const DEFAULT_TIMINGS: Record<string, number> = {
   tCL: 36,
   tRCD: 36,
@@ -116,7 +107,7 @@ export async function loadStaticConfig(): Promise<ConfigData> {
   return {
     timing_definitions: withIds(raw.timing_definitions.timings, "timing_id"),
     timing_aliases: raw.timing_aliases.aliases ?? {},
-    die_profiles: withIds(commonDieProfiles(raw.die_profiles.die_profiles), "die_id"),
+    die_profiles: withIds(raw.die_profiles.die_profiles, "die_id"),
     platform_profiles: withIds(raw.platform_profiles.platform_profiles, "platform_id"),
     voltage_profiles: withIds(raw.voltage_profiles.voltages, "voltage_id"),
     power_model: raw.power_model,
@@ -129,7 +120,7 @@ export function evaluateStaticProfile(input: MemoryProfile, config: ConfigData):
   const profile = structuredClone(input);
   profile.timings = normalizeTimingKeys(profile.timings ?? {}, config);
   profile.voltages = { ...(profile.voltages ?? {}) };
-  const die = config.die_profiles[profile.die_id] ?? config.die_profiles.jedec_generic;
+  const die = config.die_profiles[profile.die_id] ?? Object.values(config.die_profiles)[0];
   const platform = config.platform_profiles[profile.platform_id] ?? Object.values(config.platform_profiles)[0];
   applyDefaults(profile, config, die);
   const timingResults = Object.entries(config.timing_definitions).map(([id, definition]) =>
@@ -177,10 +168,6 @@ export async function importHwinfoStatic(file: File, baseProfile: MemoryProfile,
 
 function withIds(items: Record<string, any>, idKey: string) {
   return Object.fromEntries(Object.entries(items).map(([id, value]) => [id, { [idKey]: id, ...value }]));
-}
-
-function commonDieProfiles(items: Record<string, any>) {
-  return Object.fromEntries(Object.entries(items).filter(([id]) => COMMON_DIE_IDS.has(id)));
 }
 
 function normalizeTimingKeys(timings: Record<string, number | undefined>, config: ConfigData) {
@@ -386,11 +373,13 @@ function predictDie(text: string) {
   const manufacturer = /SDRAM Manufacturer:\s*([A-Za-z0-9 _-]+)/i.exec(text)?.[1]?.toLowerCase();
   const density = firstNumber(text, [/Module Density:\s*(\d+)\s*Mb/i]);
   if (!manufacturer) return null;
-  if (manufacturer.includes("samsung") && density === 16384) return "samsung_16g_early";
-  if (manufacturer.includes("samsung")) return "samsung_16g_early";
+  if (manufacturer.includes("samsung") && density === 32768) return "samsung_32g_m_die";
+  if (manufacturer.includes("samsung") && density === 16384) return "samsung_16g_b_die";
   if (manufacturer.includes("hynix") && density === 24576) return "hynix_24g_m_die";
-  if (manufacturer.includes("hynix")) return "hynix_16g_m_die";
-  if (manufacturer.includes("micron")) return "micron_16g_early";
+  if (manufacturer.includes("hynix") && density === 32768) return "hynix_32g_m_die";
+  if (manufacturer.includes("hynix") && density === 16384) return "hynix_16g_m_die";
+  if (manufacturer.includes("micron") && density === 24576) return "micron_24g_b_die";
+  if (manufacturer.includes("micron") && density === 32768) return "micron_32g_b_die";
   return null;
 }
 

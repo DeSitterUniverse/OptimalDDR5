@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { FileUp, Info, Save } from "lucide-react";
 import { evaluateProfile, fetchConfig, importHwinfo } from "./lib/api";
-import type { ConfigData, Evaluation, MemoryProfile } from "./lib/types";
+import type { ConfigData, DieProfile, Evaluation, MemoryProfile } from "./lib/types";
 import "./styles.css";
 
 const timingKeys = [
@@ -19,15 +19,6 @@ const displayNames: Record<string, string> = {
   MC_Voltage: "MC_Voltage / VDD2",
   SoC: "SoC / IMC support"
 };
-const commonDieIds = new Set([
-  "hynix_16g_m_die",
-  "hynix_16g_a_die",
-  "hynix_24g_m_die",
-  "samsung_16g_early",
-  "micron_16g_early",
-  "jedec_generic"
-]);
-
 function App() {
   const [config, setConfig] = useState<ConfigData | null>(null);
   const [profile, setProfile] = useState<MemoryProfile | null>(null);
@@ -113,6 +104,10 @@ function App() {
         </section>
 
         <section className="section">
+          <OverclockingResearch die={config.die_profiles[profile.die_id]} platformId={profile.platform_id} />
+        </section>
+
+        <section className="section">
           <h2>Voltages</h2>
           <div className="dense-grid">{voltageKeys.map((key) => <label key={key}>{displayNames[key] ?? key}<input type="number" step="0.01" value={profile.voltages[key] ?? ""} onChange={(e) => updateVoltage(key, e.target.value)} /></label>)}</div>
         </section>
@@ -150,6 +145,34 @@ function App() {
       </section>
     </main>
   );
+}
+
+function OverclockingResearch({ die, platformId }: { die?: DieProfile; platformId: string }) {
+  const limits = die?.overclocking_limits;
+  if (!limits) return null;
+  const daily = platformId.includes("am5") ? limits.daily_range_am5_mtps : limits.daily_range_intel_mtps;
+  return <div>
+    <h2>Die overclocking research</h2>
+    <p className="muted">Observed limits are evidence records, not guaranteed settings. A benchmark or boot ceiling is not a stability result.</p>
+    <div className="metric-list research-metrics">
+      <div><span>Research status</span><strong>{limits.research_status}</strong></div>
+      <div><span>Evidence quality</span><strong>{limits.evidence_quality}</strong></div>
+      <div><span>Highest retail profile</span><strong>{mtps(limits.retail_profile_max_mtps)}</strong></div>
+      <div><span>Documented stable maximum</span><strong>{mtps(limits.documented_stable_max_mtps)}</strong></div>
+      <div><span>Benchmark / boot maximum</span><strong>{mtps(limits.documented_benchmark_max_mtps)}</strong></div>
+      <div><span>Daily target on selected platform</span><strong>{rangeMtps(daily)}</strong></div>
+      <div><span>Tested VDD/VDDQ evidence</span><strong>{rangeVolts(limits.tested_vdd_vddq_range)}</strong></div>
+      <div><span>Last researched</span><strong>{limits.last_researched}</strong></div>
+    </div>
+    <div className="notes">
+      {limits.limit_basis && <p><strong>Basis:</strong> {limits.limit_basis}</p>}
+      {limits.voltage_scaling && <p><strong>Voltage behavior:</strong> {limits.voltage_scaling}</p>}
+      {limits.community_consensus && <p><strong>Community consensus:</strong> {limits.community_consensus}</p>}
+      {(limits.community_experiences ?? []).map((note: string) => <p key={note}><strong>Owner experience:</strong> {note}</p>)}
+      {(limits.caveats ?? []).map((note: string) => <p key={note}>{note}</p>)}
+    </div>
+    {!!die.sources?.length && <div className="source-links"><strong>Die research sources</strong>{die.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.source_name}</a>)}</div>}
+  </div>;
 }
 
 function TimingInput({ timingKey, config, value, onChange }: { timingKey: string; config: ConfigData; value?: number; onChange: (value: string) => void }) {
@@ -261,10 +284,22 @@ function visibleVoltageKeys(platformId: string) {
 }
 
 function selectableDieEntries(config: ConfigData, selectedDieId: string) {
-  const entries = Object.entries(config.die_profiles).filter(([id]) => commonDieIds.has(id));
+  const entries = Object.entries(config.die_profiles);
   if (!selectedDieId || entries.some(([id]) => id === selectedDieId)) return entries;
   const selected = config.die_profiles[selectedDieId];
   return selected ? [[selectedDieId, selected], ...entries] : entries;
+}
+
+function mtps(value?: number) {
+  return value ? `${value.toLocaleString()} MT/s` : "Not established";
+}
+
+function rangeMtps(value?: [number, number]) {
+  return value ? `${value[0].toLocaleString()}-${value[1].toLocaleString()} MT/s` : "Not established";
+}
+
+function rangeVolts(value?: [number, number]) {
+  return value ? `${value[0].toFixed(2)}-${value[1].toFixed(2)} V` : "Not established";
 }
 
 function summaryLabel(key: string) {
@@ -282,7 +317,9 @@ function numberOrUndefined(value: string) {
 
 function fmt(value: any) {
   if (value === null || value === undefined || Number.isNaN(value)) return "N/A";
-  return typeof value === "number" ? value.toFixed(value > 100 ? 0 : 3).replace(/\.?0+$/, "") : String(value);
+  if (typeof value !== "number") return String(value);
+  const fixed = value.toFixed(value > 100 ? 0 : 3);
+  return fixed.includes(".") ? fixed.replace(/\.?0+$/, "") : fixed;
 }
 
 function className(value?: string) {

@@ -64,7 +64,7 @@ def evaluate_profile(profile: MemoryProfile, db: dict[str, Any]) -> EvaluationRe
     timings = normalize_timing_keys(profile.timings, aliases)
     profile.timings = timings
 
-    die = db["die_profiles"].get(profile.die_id) or db["die_profiles"]["jedec_generic"]
+    die = db["die_profiles"].get(profile.die_id) or next(iter(db["die_profiles"].values()))
     platform = db["platform_profiles"].get(profile.platform_id) or next(iter(db["platform_profiles"].values()))
     apply_profile_defaults(profile, db, die.timing_ranges)
     timing_results = [

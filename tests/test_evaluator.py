@@ -28,12 +28,12 @@ def test_missing_timing_handling():
     assert by_id["tRCDRD"].headroom_cycles is not None
 
 
-def test_samsung_early_profile_scores_user_profile_tight_within_two_cycles():
+def test_samsung_16g_b_die_scores_user_profile_tight_within_two_cycles():
     db = load_database()
     profile = MemoryProfile(
-        profile_name="Samsung early DDR5 tight example",
+        profile_name="Samsung 16Gb B-die tight example",
         platform_id="raptor_lake_ddr5",
-        die_id="samsung_16g_early",
+        die_id="samsung_16g_b_die",
         mtps=6000,
         voltages={"VDD": 1.20, "VDDQ": 1.20, "VPP": 1.80, "MC_Voltage": 1.10},
         timings={"tCL": 36, "tRCD": 36, "tRP": 36, "tRAS": 72, "tRFC": 480, "tRRDS": 4, "tRRDL": 8, "tFAW": 16},
@@ -41,8 +41,43 @@ def test_samsung_early_profile_scores_user_profile_tight_within_two_cycles():
     result = evaluate_profile(profile, db)
     by_id = {item.timing_id: item for item in result.timing_results}
     assert by_id["tCL"].classification == Classification.TIGHT
-    assert by_id["tCL"].headroom_cycles == 0
+    assert by_id["tCL"].headroom_cycles <= 2
     assert by_id["tRFC"].headroom_cycles <= 2
+
+
+def test_die_database_contains_only_requested_research_set():
+    db = load_database()
+    assert set(db["die_profiles"]) == {
+        "hynix_16g_m_die",
+        "hynix_16g_a_die",
+        "hynix_24g_m_die",
+        "hynix_24g_a_die",
+        "hynix_32g_m_die",
+        "samsung_16g_b_die",
+        "samsung_16g_d_die",
+        "samsung_16g_e_die",
+        "samsung_32g_m_die",
+        "micron_16g_a_die",
+        "micron_16g_b_die",
+        "micron_16g_d_die",
+        "micron_24g_b_die",
+        "micron_32g_b_die",
+        "micron_32g_e_die",
+        "micron_32g_a_spectek",
+        "cxmt_16g",
+        "cxmt_24g",
+    }
+
+
+def test_every_die_has_limit_and_community_research_metadata():
+    db = load_database()
+    for die in db["die_profiles"].values():
+        limits = die.overclocking_limits
+        assert limits.research_status
+        assert limits.evidence_quality
+        assert limits.limit_basis
+        assert limits.community_consensus
+        assert limits.last_researched == "2026-08-09"
 
 
 def test_example_profiles_evaluate():

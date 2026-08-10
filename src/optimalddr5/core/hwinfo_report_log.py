@@ -109,16 +109,20 @@ def predict_die_id(memory_text: str) -> str | None:
     if not manufacturer:
         return None
     normalized = manufacturer.lower()
+    if "samsung" in normalized and density == 32768:
+        return "samsung_32g_m_die"
     if "samsung" in normalized and density == 16384:
-        return "samsung_16g_early"
-    if "samsung" in normalized:
-        return "samsung_16g_early"
+        return "samsung_16g_b_die"
     if "hynix" in normalized and density == 24576:
         return "hynix_24g_m_die"
-    if "hynix" in normalized:
+    if "hynix" in normalized and density == 32768:
+        return "hynix_32g_m_die"
+    if "hynix" in normalized and density == 16384:
         return "hynix_16g_m_die"
-    if "micron" in normalized:
-        return "micron_16g_early"
+    if "micron" in normalized and density == 24576:
+        return "micron_24g_b_die"
+    if "micron" in normalized and density == 32768:
+        return "micron_32g_b_die"
     return None
 
 
