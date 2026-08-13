@@ -9,7 +9,8 @@ OptimalDDR5 is a DDR5 RAM timing analyzer. It's a practical tuning notebook, tim
 - DDR5 timing conversion: MT/s, real clock, cycle time, predicted bandwidth, and high-impact timing latency in ns.
 - Timing glossary with aliases, BIOS naming notes, and dependency notes such as `tWRPRE`/`tWR` and `tWRRD`/`tWTR`.
 - Die/platform/frequency range comparison with tight/moderate/loose/unknown classification.
-- Per-die overclock research separating retail profiles, stability-tested ceilings, benchmark/boot records, daily target ranges, and user consensus.
+- Per-die overclock research separating retail profiles, stability-tested ceilings, limited/failed attempts, benchmark/boot records, daily target ranges, voltages, timings, and user consensus.
+- A current-OC comparison that places the entered frequency and VDD/VDDQ against the selected platform's daily range and the die's stable or non-stable evidence ceiling.
 - AMD AM5 and Intel Alder/Raptor/Arrow Lake voltage guidance with low/average/elevated/high bands.
 - Die-calibrated voltage-based DIMM peak power and heat estimate.
 - Examples spanning Hynix 16Gb/24Gb, Samsung 32Gb, Micron 16Gb D-die, and CXMT 24Gb behavior.
@@ -51,4 +52,4 @@ Use the import button and select a `.LOG` file. The parser looks for a Memory se
 
 ## Source Warning
 
-The database keeps retail/XMP specifications, stability-tested results, benchmark or boot-only records, and owner anecdotes separate. `Not established` is intentional for rare dies without credible consumer evidence. Nothing is guaranteed: CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
+The database keeps retail/XMP specifications, stability-tested results, limited and failed attempts, benchmark or boot-only records, and owner anecdotes separate. Each attempt can retain frequency, primary timings, VDD/VDDQ, platform, capacity, cooling, validation method, confidence, and a direct source. `Not established` is intentional for rare dies without credible consumer evidence. Nothing is guaranteed: CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.

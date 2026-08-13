@@ -21,6 +21,17 @@ class HeatLevel(StrEnum):
     EXTREME = "extreme"
 
 
+class OverclockAttemptResult(StrEnum):
+    STABLE = "stable"
+    LIMITED_STABILITY = "limited_stability"
+    BENCHMARK = "benchmark"
+    BOOT_ONLY = "boot_only"
+    FAILED = "failed"
+    RETAIL_PROFILE = "retail_profile"
+    INFERRED_DEMONSTRATION = "inferred_demonstration"
+    NO_VERIFIED_ATTEMPT = "no_verified_attempt"
+
+
 class SourceRef(BaseModel):
     url: str
     source_name: str
@@ -37,6 +48,22 @@ class RangeBand(BaseModel):
     very_loose: tuple[float, float] | None = None
 
 
+class OverclockAttempt(BaseModel):
+    label: str
+    result: OverclockAttemptResult
+    mtps: int | None = None
+    timings: str = "Not reported"
+    vdd: float | None = None
+    vddq: float | None = None
+    platform: str = "Not reported"
+    capacity: str = "Not reported"
+    stability: str = "Not reported"
+    cooling: str = "Not reported"
+    confidence: str
+    source_url: str
+    notes: str = ""
+
+
 class OverclockingLimits(BaseModel):
     research_status: str
     evidence_quality: str
@@ -51,6 +78,7 @@ class OverclockingLimits(BaseModel):
     community_consensus: str = ""
     community_experiences: list[str] = Field(default_factory=list)
     caveats: list[str] = Field(default_factory=list)
+    attempts: list[OverclockAttempt] = Field(default_factory=list)
     last_researched: str
 
 

@@ -74,6 +74,7 @@ h1, h2 {
 
 h1 { font-size: 24px; font-weight: 700; }
 h2 { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+h3 { margin: 20px 0 8px; color: #ddd5cb; font-size: 14px; }
 p { margin: 0; color: #bdb7ae; line-height: 1.5; }
 
 button, .file-button {
@@ -200,6 +201,8 @@ input:focus, select:focus {
 .summary span, .metric-list span { color: #999188; }
 .summary strong, .metric-list strong { color: #f4efe8; text-align: right; }
 .research-metrics { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.comparison-metrics { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.comparison-note { margin-top: 10px; color: #9f978d; }
 .source-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 16px; }
 .source-links strong { width: 100%; }
 .source-links a { color: #e39449; }
@@ -232,6 +235,8 @@ th {
 
 td > span { display: block; color: #999188; margin-top: 2px; }
 td small { display: block; margin-top: 5px; color: #8c857d; line-height: 1.4; }
+.attempt-table table { min-width: 1050px; }
+.attempt-table a { color: #e39449; }
 
 .badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .badge {

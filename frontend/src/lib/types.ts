@@ -38,7 +38,24 @@ export type OverclockingLimits = {
   community_consensus: string;
   community_experiences: string[];
   caveats: string[];
+  attempts: OverclockAttempt[];
   last_researched: string;
+};
+
+export type OverclockAttempt = {
+  label: string;
+  result: "stable" | "limited_stability" | "benchmark" | "boot_only" | "failed" | "retail_profile" | "inferred_demonstration" | "no_verified_attempt";
+  mtps?: number;
+  timings: string;
+  vdd?: number;
+  vddq?: number;
+  platform: string;
+  capacity: string;
+  stability: string;
+  cooling: string;
+  confidence: string;
+  source_url: string;
+  notes: string;
 };
 
 export type DieResearchSource = {

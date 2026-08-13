@@ -104,7 +104,7 @@ function App() {
         </section>
 
         <section className="section">
-          <OverclockingResearch die={config.die_profiles[profile.die_id]} platformId={profile.platform_id} />
+          <OverclockingResearch die={config.die_profiles[profile.die_id]} profile={profile} />
         </section>
 
         <section className="section">
@@ -147,19 +147,32 @@ function App() {
   );
 }
 
-function OverclockingResearch({ die, platformId }: { die?: DieProfile; platformId: string }) {
+function OverclockingResearch({ die, profile }: { die?: DieProfile; profile: MemoryProfile }) {
   const limits = die?.overclocking_limits;
   if (!limits) return null;
-  const daily = platformId.includes("am5") ? limits.daily_range_am5_mtps : limits.daily_range_intel_mtps;
+  const daily = profile.platform_id.includes("am5") ? limits.daily_range_am5_mtps : limits.daily_range_intel_mtps;
+  const failedMax = maxAttemptMtps(limits.attempts, "failed");
+  const frequency = compareFrequency(profile.mtps, daily, limits.documented_stable_max_mtps, limits.documented_benchmark_max_mtps, failedMax);
+  const voltage = compareVoltage(profile.voltages.VDD, profile.voltages.VDDQ, limits.tested_vdd_vddq_range);
   return <div>
     <h2>Die overclocking research</h2>
     <p className="muted">Observed limits are evidence records, not guaranteed settings. A benchmark or boot ceiling is not a stability result.</p>
+    <h3>Current OC comparison</h3>
+    <div className="metric-list comparison-metrics">
+      <div><span>Current frequency</span><strong>{mtps(profile.mtps)}</strong></div>
+      <div><span>Current primaries</span><strong>{primaryTimings(profile.timings)}</strong></div>
+      <div><span>Frequency assessment</span><strong><span className={`badge ${frequency.tone}`}>{frequency.label}</span></strong></div>
+      <div><span>Frequency margin</span><strong>{frequency.detail}</strong></div>
+      <div><span>Current VDD / VDDQ</span><strong>{currentVoltage(profile.voltages.VDD, profile.voltages.VDDQ)}</strong></div>
+      <div><span>Voltage evidence</span><strong><span className={`badge ${voltage.tone}`}>{voltage.label}</span></strong></div>
+    </div>
+    <p className="comparison-note">{voltage.detail} Frequency comparisons use the selected platform’s researched daily range, then stable evidence, then limited, benchmark, or boot evidence. They are not safety guarantees.</p>
     <div className="metric-list research-metrics">
       <div><span>Research status</span><strong>{limits.research_status}</strong></div>
       <div><span>Evidence quality</span><strong>{limits.evidence_quality}</strong></div>
       <div><span>Highest retail profile</span><strong>{mtps(limits.retail_profile_max_mtps)}</strong></div>
       <div><span>Documented stable maximum</span><strong>{mtps(limits.documented_stable_max_mtps)}</strong></div>
-      <div><span>Benchmark / boot maximum</span><strong>{mtps(limits.documented_benchmark_max_mtps)}</strong></div>
+      <div><span>Non-stable / benchmark maximum</span><strong>{mtps(limits.documented_benchmark_max_mtps)}</strong></div>
       <div><span>Daily target on selected platform</span><strong>{rangeMtps(daily)}</strong></div>
       <div><span>Tested VDD/VDDQ evidence</span><strong>{rangeVolts(limits.tested_vdd_vddq_range)}</strong></div>
       <div><span>Last researched</span><strong>{limits.last_researched}</strong></div>
@@ -171,6 +184,15 @@ function OverclockingResearch({ die, platformId }: { die?: DieProfile; platformI
       {(limits.community_experiences ?? []).map((note: string) => <p key={note}><strong>Owner experience:</strong> {note}</p>)}
       {(limits.caveats ?? []).map((note: string) => <p key={note}>{note}</p>)}
     </div>
+    <h3>Recorded attempts</h3>
+    <div className="table-wrap attempt-table"><table><thead><tr><th>Result</th><th>MT/s & timings</th><th>VDD / VDDQ</th><th>Platform & capacity</th><th>Validation</th><th>Evidence</th></tr></thead><tbody>{(limits.attempts ?? []).map((attempt, index) => <tr key={`${attempt.source_url}-${index}`}>
+      <td><span className={`badge ${attemptTone(attempt.result)}`}>{attemptResultLabel(attempt.result)}</span><small>{attempt.label}</small></td>
+      <td><strong>{mtps(attempt.mtps)}</strong><span>{attempt.timings}</span></td>
+      <td>{attemptVoltage(attempt.vdd, attempt.vddq)}</td>
+      <td>{attempt.platform}<span>{attempt.capacity}</span></td>
+      <td>{attempt.stability}<span>{attempt.cooling}</span></td>
+      <td><a href={attempt.source_url} target="_blank" rel="noreferrer">{attempt.confidence} confidence</a><small>{attempt.notes}</small></td>
+    </tr>)}</tbody></table></div>
     {!!die.sources?.length && <div className="source-links"><strong>Die research sources</strong>{die.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer">{source.source_name}</a>)}</div>}
   </div>;
 }
@@ -300,6 +322,62 @@ function rangeMtps(value?: [number, number]) {
 
 function rangeVolts(value?: [number, number]) {
   return value ? `${value[0].toFixed(2)}-${value[1].toFixed(2)} V` : "Not established";
+}
+
+function compareFrequency(current: number, daily?: [number, number], stable?: number, benchmark?: number, failedMax?: number) {
+  if (daily && current < daily[0]) return { tone: "gray", label: "Below researched daily range", detail: `${(daily[0] - current).toLocaleString()} MT/s below its lower bound` };
+  if (daily && current <= daily[1]) return { tone: "green", label: "Within researched daily range", detail: `${(daily[1] - current).toLocaleString()} MT/s below its upper bound` };
+  if (stable && current <= stable) return { tone: "yellow", label: "Above typical daily; within stable evidence", detail: `${(stable - current).toLocaleString()} MT/s below the documented stable maximum` };
+  if (stable && current > stable && benchmark && current <= benchmark) return { tone: "orange", label: "Beyond stable evidence", detail: `${(current - stable).toLocaleString()} MT/s above stable; only limited, benchmark, or boot evidence reaches this range` };
+  if (!stable && benchmark && current <= benchmark) return { tone: "orange", label: "No stable ceiling; within non-stable evidence", detail: `${(benchmark - current).toLocaleString()} MT/s below the highest limited, benchmark, or boot result` };
+  const successfulMax = benchmark ?? stable;
+  if (successfulMax && current > successfulMax && failedMax && current <= failedMax) return { tone: "red", label: "In recorded failure territory", detail: `${(current - successfulMax).toLocaleString()} MT/s above the highest successful result; failed attempts extend to ${failedMax.toLocaleString()} MT/s` };
+  if (benchmark && current > benchmark) return { tone: "red", label: "Beyond highest successful evidence", detail: `${(current - benchmark).toLocaleString()} MT/s above the non-stable/benchmark maximum` };
+  if (stable && current > stable) return { tone: "red", label: "Beyond documented stable evidence", detail: `${(current - stable).toLocaleString()} MT/s above the documented stable maximum` };
+  return { tone: "gray", label: "No die-specific maximum established", detail: daily ? `${(current - daily[1]).toLocaleString()} MT/s above the researched daily range` : "No defensible frequency margin can be calculated" };
+}
+
+function maxAttemptMtps(attempts: DieProfile["overclocking_limits"]["attempts"], result: string) {
+  const values = (attempts ?? []).filter((attempt) => attempt.result === result && attempt.mtps !== undefined).map((attempt) => attempt.mtps as number);
+  return values.length ? Math.max(...values) : undefined;
+}
+
+function compareVoltage(vdd?: number, vddq?: number, evidence?: [number, number]) {
+  if (!evidence) return { tone: "gray", label: "No die-specific range", detail: "No verified die-specific VDD/VDDQ range is available." };
+  const values = [vdd, vddq].filter((value): value is number => typeof value === "number");
+  if (!values.length) return { tone: "gray", label: "Voltage not entered", detail: `Recorded attempts span ${rangeVolts(evidence)}.` };
+  const high = Math.max(...values);
+  const low = Math.min(...values);
+  if (high > evidence[1]) return { tone: "red", label: "Above recorded voltage evidence", detail: `At least one entered rail is ${(high - evidence[1]).toFixed(2)} V above the highest recorded VDD/VDDQ evidence.` };
+  if (low < evidence[0]) return { tone: "yellow", label: "Below recorded evidence range", detail: "Lower voltage may be efficient, but the recorded attempts do not establish stability here." };
+  return { tone: "green", label: "Within recorded voltage evidence", detail: `Entered VDD/VDDQ falls within the ${rangeVolts(evidence)} evidence span.` };
+}
+
+function primaryTimings(timings: Record<string, number | undefined>) {
+  const rcd = timings.tRCDRD ?? timings.tRCD;
+  const values = [timings.tCL, rcd, timings.tRP, timings.tRAS];
+  return values.some((value) => value === undefined) ? "Incomplete" : values.join("-");
+}
+
+function currentVoltage(vdd?: number, vddq?: number) {
+  return `${vdd?.toFixed(2) ?? "N/A"} / ${vddq?.toFixed(2) ?? "N/A"} V`;
+}
+
+function attemptVoltage(vdd?: number, vddq?: number) {
+  if (vdd === undefined && vddq === undefined) return "Not reported";
+  return `${vdd?.toFixed(2) ?? "N/R"} / ${vddq?.toFixed(2) ?? "N/R"} V`;
+}
+
+function attemptTone(result: string) {
+  if (result === "stable") return "green";
+  if (result === "limited_stability" || result === "retail_profile") return "yellow";
+  if (result === "benchmark" || result === "boot_only" || result === "inferred_demonstration") return "orange";
+  if (result === "failed") return "red";
+  return "gray";
+}
+
+function attemptResultLabel(result: string) {
+  return result.replaceAll("_", " ");
 }
 
 function summaryLabel(key: string) {

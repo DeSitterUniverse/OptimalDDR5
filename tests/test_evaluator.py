@@ -77,7 +77,27 @@ def test_every_die_has_limit_and_community_research_metadata():
         assert limits.evidence_quality
         assert limits.limit_basis
         assert limits.community_consensus
-        assert limits.last_researched == "2026-08-09"
+        assert limits.last_researched == "2026-08-12"
+        assert limits.attempts
+        for attempt in limits.attempts:
+            assert attempt.label
+            assert attempt.result
+            assert attempt.confidence
+            assert attempt.source_url.startswith("https://")
+
+
+def test_established_maxima_are_backed_by_attempts():
+    db = load_database()
+    for die in db["die_profiles"].values():
+        limits = die.overclocking_limits
+        attempted_mtps = [attempt.mtps for attempt in limits.attempts if attempt.mtps is not None]
+        if limits.documented_stable_max_mtps is not None:
+            assert any(
+                attempt.mtps == limits.documented_stable_max_mtps and attempt.result == "stable"
+                for attempt in limits.attempts
+            )
+        if limits.documented_benchmark_max_mtps is not None:
+            assert limits.documented_benchmark_max_mtps in attempted_mtps
 
 
 def test_example_profiles_evaluate():
