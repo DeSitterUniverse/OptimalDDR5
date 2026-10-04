@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 
 import json
+from pydantic import ValidationError
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,9 +41,13 @@ def config() -> dict:
         "platform_profiles": {k: v.model_dump() for k, v in db["platform_profiles"].items()},
         "voltage_profiles": {k: v.model_dump() for k, v in db["voltage_profiles"].items()},
         "example_profiles": db["example_profiles"],
+        "timing_aliases": db["timing_aliases"],
+        "timing_reference_ranges": db["timing_reference_ranges"],
+        "power_model": db["power_model"],
         "files": [
             "config/timing_definitions.yaml",
             "config/timing_aliases.yaml",
+            "config/timing_reference_ranges.yaml",
             "config/die_profiles.yaml",
             "config/platform_profiles.yaml",
             "config/voltage_profiles.yaml",
@@ -54,7 +59,10 @@ def config() -> dict:
 
 @app.post("/api/reload-config")
 def reload_config() -> dict:
-    reload_database()
+    try:
+        reload_database()
+    except ConfigError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     return {"ok": True}
 
 
@@ -64,11 +72,15 @@ def evaluate(profile: MemoryProfile) -> dict:
         return evaluate_profile(profile, load_database()).model_dump()
     except ConfigError as exc:
         raise HTTPException(status_code=500, detail={"file": exc.file.name, "message": exc.message}) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.post("/api/import/hwinfo")
 async def import_hwinfo(file: UploadFile = File(...), profile_json: str | None = Form(default=None)) -> dict:
-    content = await file.read()
+    content = await file.read(5 * 1024 * 1024 + 1)
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Import files must be 5 MB or smaller")
     suffix = Path(file.filename or "memory.log").suffix or ".log"
     handle = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
     path = Path(handle.name)
@@ -79,5 +91,9 @@ async def import_hwinfo(file: UploadFile = File(...), profile_json: str | None =
         profile = parse_hwinfo_log(path, base_profile=base_profile)
         result = evaluate_profile(profile, load_database())
         return {"profile": profile.model_dump(), "evaluation": result.model_dump()}
+    except (ValueError, ValidationError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ConfigError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     finally:
         path.unlink(missing_ok=True)

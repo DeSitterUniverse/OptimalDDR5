@@ -15,7 +15,7 @@ def test_headroom_classification_against_sample_ranges():
     )
     result = evaluate_profile(profile, db)
     by_id = {item.timing_id: item for item in result.timing_results}
-    assert by_id["tCL"].classification == Classification.TIGHT
+    assert by_id["tCL"].classification == Classification.MODERATE
     assert by_id["tRFC"].classification in {Classification.LOOSE, Classification.VERY_LOOSE}
 
 
@@ -24,8 +24,9 @@ def test_missing_timing_handling():
     profile = MemoryProfile(profile_name="missing", timings={"tCL": 30})
     result = evaluate_profile(profile, db)
     by_id = {item.timing_id: item for item in result.timing_results}
-    assert by_id["tRCDRD"].cycles is not None
-    assert by_id["tRCDRD"].headroom_cycles is not None
+    assert by_id["tRCDRD"].cycles is None
+    assert by_id["tRCDRD"].headroom_cycles is None
+    assert result.profile.timings == {"tCL": 30}
 
 
 def test_samsung_16g_b_die_scores_user_profile_tight_within_two_cycles():
@@ -108,11 +109,11 @@ def test_example_profiles_evaluate():
         assert result.power_estimate.estimated_power_per_dimm_watts > 0
 
 
-def test_blank_profile_receives_default_voltages_for_power():
+def test_blank_profile_keeps_missing_voltages_unknown():
     db = load_database()
     result = evaluate_profile(MemoryProfile(profile_name="blank", voltages={}, timings={}), db)
-    assert result.profile.voltages["VDD"] >= 1.1
-    assert result.profile.voltages["VDDQ"] >= 1.1
+    assert result.profile.voltages == {}
+    assert all(row.risk_level == "unknown" for row in result.voltage_results)
     assert result.power_estimate.effective_voltage >= 1.1
 
 
@@ -145,12 +146,12 @@ def test_voltage_language_uses_platform_ranges():
     assert amd_by_id["VDD"].risk_level == "elevated"
 
 
-def test_default_timing_rules_for_tcwl_and_trc():
+def test_entered_timing_consistency_notes():
     db = load_database()
     result = evaluate_profile(
         MemoryProfile(
             profile_name="rules",
-            timings={"tCL": 34, "tRAS": 80, "tRP": 40},
+            timings={"tCL": 34, "tCWL": 32, "tRAS": 80, "tRP": 40, "tRC": 120},
             voltages={"VDD": 1.35, "VDDQ": 1.35},
         ),
         db,

@@ -15,6 +15,10 @@ TIMING_PATTERNS = {
     "tRAS": [r"\btRAS\b.*?(\d+(?:\.\d+)?)"],
     "tRC": [r"\btRC\b.*?(\d+(?:\.\d+)?)"],
     "tRFC": [r"\btRFC\b.*?(\d+(?:\.\d+)?)"],
+    "tRFC2": [r"\btRFC2\b.*?(\d+(?:\.\d+)?)"],
+    "tRFCsb": [r"\btRFC(?:sb|_sb|pb)\b.*?(\d+(?:\.\d+)?)"],
+    "tCWL": [r"\btCWL\b.*?(\d+(?:\.\d+)?)"],
+    "tWRPRE": [r"\btWRPRE\b.*?(\d+(?:\.\d+)?)"],
     "tREFI": [r"\btREFI\b.*?(\d+(?:\.\d+)?)"],
     "tRDRDSG": [r"Read to Read Delay \(tRDRD_SG/.*?Same Bank Group:\s*(\d+)T"],
     "tRDRDDG": [r"Read to Read Delay \(tRDRD_DG/.*?Different Bank Group:\s*(\d+)T"],
@@ -22,8 +26,6 @@ TIMING_PATTERNS = {
     "tRDRDDD": [r"Read to Read Delay \(tRDRD_DD\).*?Different DIMM:\s*(\d+)T"],
     "tWRWRSG": [r"Write to Write Delay \(tWRWR_SG/.*?Same Bank Group:\s*(\d+)T"],
     "tWRWRDG": [r"Write to Write Delay \(tWRWR_DG/.*?Different Bank Group:\s*(\d+)T"],
-    "tWRWRSD": [r"Write to Write Delay \(tWRWR_SD\).*?Same DIMM:\s*(\d+)T"],
-    "tWRWRDD": [r"Write to Write Delay \(tWRWR_DD\).*?Different DIMM:\s*(\d+)T"],
     "tWRRDSG": [r"Write to Read Delay \(tWRRD_SG/.*?Same Bank Group:\s*(\d+)T"],
     "tWRRDDG": [r"Write to Read Delay \(tWRRD_DG/.*?Different Bank Group:\s*(\d+)T"],
     "tRTP": [r"Read to Precharge Delay \(tRTP\):\s*(\d+)T"],
@@ -34,13 +36,18 @@ TIMING_PATTERNS = {
 }
 
 def parse_hwinfo_log(path: str | Path, base_profile: MemoryProfile | None = None) -> MemoryProfile:
-    text = Path(path).read_text(encoding="utf-8", errors="ignore")
+    content = Path(path).read_bytes()
+    if len(content) > 5 * 1024 * 1024:
+        raise ValueError("Import files must be 5 MB or smaller")
+    text = content.decode("utf-16" if content.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig", errors="replace")
     memory_text = _memory_section(text)
-    base = base_profile or MemoryProfile(profile_name="Imported HWiNFO memory profile")
-    timings = dict(base.timings)
+    base = base_profile.model_copy(deep=True) if base_profile else MemoryProfile(profile_name="Imported HWiNFO memory profile")
+    timings = {}
     for timing, patterns in TIMING_PATTERNS.items():
         value = _first_number(memory_text, patterns)
         if value is not None:
+            if not value.is_integer():
+                raise ValueError(f"{timing} must be a whole cycle count")
             timings[timing] = int(value)
     tuple_match = re.search(
         r"Current Timing\s*\(tCAS-tRCD-tRP-tRAS\):\s*(\d+)-(\d+)-(\d+)-(\d+)",
@@ -62,8 +69,8 @@ def parse_hwinfo_log(path: str | Path, base_profile: MemoryProfile | None = None
     trfc_match = re.search(r"Refresh Cycle Time \(tRFC\):\s*(\d+)T", memory_text, flags=re.IGNORECASE)
     if trfc_match:
         timings["tRFC"] = int(trfc_match.group(1))
-    mtps = _first_number(memory_text, [r"\bCurrent Memory Clock\b.*?(\d+(?:\.\d+)?)\s*MHz", r"\bMemory Clock\b.*?(\d+(?:\.\d+)?)\s*MHz", r"\bClock\b.*?(\d+(?:\.\d+)?)\s*MHz"])
-    if mtps and mtps < 4000:
+    mtps = _first_number(memory_text, [r"\bCurrent Memory Clock\b.*?(\d+(?:\.\d+)?)\s*MHz", r"\bMemory Clock\b.*?(\d+(?:\.\d+)?)\s*MHz"])
+    if mtps:
         base.mtps = int(round(mtps * 2))
     dimms = _first_number(memory_text, [r"\bNumber Of Memory Modules\b.*?(\d+)"])
     if dimms:
@@ -74,25 +81,25 @@ def parse_hwinfo_log(path: str | Path, base_profile: MemoryProfile | None = None
     command_rate = re.search(r"Command Rate \(CR\):\s*([12]T)", memory_text, flags=re.IGNORECASE)
     if command_rate:
         base.command_rate = command_rate.group(1).upper()
-    predicted_die = predict_die_id(memory_text)
-    if predicted_die:
-        base.die_id = predicted_die
-    if "Intel Extreme Memory Profile" in memory_text and base.platform_id == "ryzen_am5_zen4":
-        base.platform_id = "raptor_lake_ddr5"
+    if not timings and not mtps:
+        raise ValueError("No current memory timings or memory clock found; use a HWiNFO text report")
+    if base.dimm_count == 1:
+        base.channel_count = 1
+    base.validation_status = "untested"
+    base.validation_notes = ""
     base.profile_name = "Imported HWiNFO memory profile"
     base.timings = timings
-    return base
+    return MemoryProfile.model_validate(base.model_dump())
 
 
 def _memory_section(text: str) -> str:
-    hwinfo_header = re.search(r"(?im)^Memory\s+-{5,}\s*$", text)
-    if hwinfo_header:
-        return text[hwinfo_header.end() :]
-    match = re.search(r"(?ims)^-+\s*Memory\s*-+(.*?)(?:^-{5,}\s*\S|\Z)", text)
-    if match:
-        return match.group(1)
-    match = re.search(r"(?ims)\bMemory\b(.*?)(?:\n\s*\n\S|\Z)", text)
-    return match.group(1) if match else text
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    header = re.search(r"(?im)^(?:Memory[ \t]+-{5,}|-{5,}[ \t]*Memory[ \t]*-+)[ \t]*$", text)
+    if not header:
+        raise ValueError("No Memory section found; export a HWiNFO text report .LOG")
+    section = text[header.end():]
+    stop = re.search(r"(?im)^(?:Row:[ \t]*\d+|[^\r\n]+[ \t]+-{5,}|-{5,}[ \t]*[^-\r\n]+[ \t]*-+|[ \t]*\[(?:Intel Extreme Memory Profile|AMD EXPO|JEDEC))", section)
+    return section[:stop.start()] if stop else section
 
 
 def _first_number(text: str, patterns: list[str]) -> float | None:

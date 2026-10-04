@@ -1,13 +1,21 @@
 from __future__ import annotations
 
 from .models import Classification, TimingResult, VoltageResult
+import math
+
+
+def mean_score(values: list[float]) -> float:
+    """Average the discrete percentage scores without binary rounding drift."""
+    return math.floor(sum(round(value * 100) for value in values) / len(values) + 0.5) / 100 if values else 0.0
 
 
 def category_scores(timing_results: list[TimingResult]) -> dict[str, float]:
     buckets: dict[str, list[float]] = {}
     for result in timing_results:
+        if result.classification == Classification.UNKNOWN:
+            continue
         buckets.setdefault(result.category, []).append(result.headroom_score)
-    return {category: round(sum(values) / len(values), 2) for category, values in buckets.items() if values}
+    return {category: mean_score(values) for category, values in buckets.items() if values}
 
 
 def likely_bottlenecks(

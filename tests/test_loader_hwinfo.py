@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from optimalddr5.core.hwinfo_report_log import parse_hwinfo_log
+from optimalddr5.core.hwinfo_report_log import parse_hwinfo_log, predict_die_id
 from optimalddr5.core.models import MemoryProfile
 from optimalddr5.data.loader import load_database
 
@@ -36,7 +36,7 @@ CPU Temp: 55 C
     assert "VDD" not in profile.voltages
 
 
-def test_hwinfo_import_parses_current_tertiaries_and_predicts_samsung_die(tmp_path: Path):
+def test_hwinfo_import_parses_current_tertiaries_without_guessing_die(tmp_path: Path):
     sample = tmp_path / "samsung.LOG"
     sample.write_text(
         """
@@ -68,7 +68,7 @@ Row: 1 [BANK 0/Controller0-DIMM1] - 16 GB PC5-44800 DDR5 SDRAM G.Skill F5-5600U3
         encoding="utf-8",
     )
     profile = parse_hwinfo_log(sample)
-    assert profile.die_id == "samsung_16g_b_die"
+    assert profile.die_id == "unknown"
     assert profile.command_rate == "2T"
     assert profile.timings["tRCDRD"] == 36
     assert profile.timings["tRCDWR"] == 36
@@ -105,5 +105,4 @@ Memory --------------------------------------------------------------------
 """,
         encoding="utf-8",
     )
-    profile = parse_hwinfo_log(sample)
-    assert profile.die_id == "hynix_24g_m_die"
+    assert predict_die_id(sample.read_text(encoding="utf-8")) == "hynix_24g_m_die"

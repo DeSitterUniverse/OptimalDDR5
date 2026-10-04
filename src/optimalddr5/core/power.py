@@ -46,8 +46,9 @@ def estimate_power(profile: MemoryProfile, die_profile: dict[str, Any] | float, 
         effective_voltage=round(effective_voltage, 3),
         heat_basis="single_dimm_peak",
         notes=[
-            "Heat level is based on estimated peak watts for one DIMM.",
-            "The model uses VDD/VDDQ, die family, and module capacity; timing effects are intentionally not modeled.",
+            "Illustrative power model, not measured watts or temperature. No validated error bounds are available.",
+            "Missing VDD/VDDQ uses the model assumptions without adding them to your profile.",
+            *power_config.get("notes", []),
         ],
     )
 

@@ -1,0 +1,421 @@
+reference_mtps: 6000
+description: Community comparison ranges, not JEDEC floors or guaranteed tuning targets.
+ranges:
+  tCL:
+    tight:
+    - 28
+    - 36
+    moderate:
+    - 38
+    - 42
+    loose:
+    - 44
+    - 52
+    confidence: low
+  tRCD:
+    tight:
+    - 34
+    - 42
+    moderate:
+    - 44
+    - 50
+    loose:
+    - 52
+    - 64
+    confidence: low
+  tRCDRD:
+    tight:
+    - 34
+    - 42
+    moderate:
+    - 44
+    - 50
+    loose:
+    - 52
+    - 64
+    confidence: low
+  tRCDWR:
+    tight:
+    - 30
+    - 42
+    moderate:
+    - 44
+    - 50
+    loose:
+    - 52
+    - 64
+    confidence: low
+  tRP:
+    tight:
+    - 34
+    - 42
+    moderate:
+    - 44
+    - 50
+    loose:
+    - 52
+    - 64
+    confidence: low
+  tRAS:
+    tight:
+    - 28
+    - 80
+    moderate:
+    - 81
+    - 104
+    loose:
+    - 105
+    - 132
+    confidence: low
+  tRC:
+    tight:
+    - 64
+    - 124
+    moderate:
+    - 125
+    - 156
+    loose:
+    - 157
+    - 192
+    confidence: low
+  tRFC:
+    tight:
+    - 420
+    - 620
+    moderate:
+    - 621
+    - 820
+    loose:
+    - 821
+    - 1100
+    confidence: low
+  tRFC2:
+    tight:
+    - 300
+    - 480
+    moderate:
+    - 481
+    - 640
+    loose:
+    - 641
+    - 900
+    confidence: low
+  tRFCsb:
+    tight:
+    - 220
+    - 380
+    moderate:
+    - 381
+    - 520
+    loose:
+    - 521
+    - 760
+    confidence: low
+  tREFI:
+    tight:
+    - 50000
+    - 65535
+    moderate:
+    - 32768
+    - 49999
+    loose:
+    - 7800
+    - 32767
+    confidence: low
+  tRRDS:
+    tight:
+    - 4
+    - 8
+    moderate:
+    - 9
+    - 12
+    loose:
+    - 13
+    - 20
+    confidence: low
+  tRRDL:
+    tight:
+    - 8
+    - 12
+    moderate:
+    - 13
+    - 18
+    loose:
+    - 19
+    - 28
+    confidence: low
+  tFAW:
+    tight:
+    - 16
+    - 32
+    moderate:
+    - 33
+    - 48
+    loose:
+    - 49
+    - 64
+    confidence: low
+  tWR:
+    tight:
+    - 24
+    - 56
+    moderate:
+    - 57
+    - 72
+    loose:
+    - 73
+    - 96
+    confidence: low
+  tWTRS:
+    tight:
+    - 4
+    - 8
+    moderate:
+    - 9
+    - 14
+    loose:
+    - 15
+    - 24
+    confidence: low
+  tWTRL:
+    tight:
+    - 12
+    - 24
+    moderate:
+    - 25
+    - 36
+    loose:
+    - 37
+    - 56
+    confidence: low
+  tRTP:
+    tight:
+    - 8
+    - 16
+    moderate:
+    - 17
+    - 24
+    loose:
+    - 25
+    - 36
+    confidence: low
+  tCWL:
+    tight:
+    - 26
+    - 36
+    moderate:
+    - 38
+    - 44
+    loose:
+    - 46
+    - 56
+    confidence: low
+  tCKE:
+    tight:
+    - 4
+    - 8
+    moderate:
+    - 9
+    - 12
+    loose:
+    - 13
+    - 20
+    confidence: low
+  tMOD:
+    tight:
+    - 24
+    - 48
+    moderate:
+    - 49
+    - 64
+    loose:
+    - 65
+    - 96
+    confidence: low
+  tXP:
+    tight:
+    - 4
+    - 8
+    moderate:
+    - 9
+    - 12
+    loose:
+    - 13
+    - 20
+    confidence: low
+  tXS:
+    tight:
+    - 160
+    - 260
+    moderate:
+    - 261
+    - 380
+    loose:
+    - 381
+    - 560
+    confidence: low
+  tXSDLL:
+    tight:
+    - 512
+    - 768
+    moderate:
+    - 769
+    - 1024
+    loose:
+    - 1025
+    - 1536
+    confidence: low
+  tWRRD:
+    tight:
+    - 1
+    - 16
+    moderate:
+    - 17
+    - 48
+    loose:
+    - 49
+    - 96
+    confidence: low
+  tWRRDSG:
+    tight:
+    - 48
+    - 66
+    moderate:
+    - 67
+    - 82
+    loose:
+    - 83
+    - 110
+    confidence: low
+  tWRRDDG:
+    tight:
+    - 36
+    - 52
+    moderate:
+    - 53
+    - 70
+    loose:
+    - 71
+    - 96
+    confidence: low
+  tWRWR:
+    tight:
+    - 4
+    - 12
+    moderate:
+    - 13
+    - 18
+    loose:
+    - 19
+    - 28
+    confidence: low
+  tWRWRSG:
+    tight:
+    - 4
+    - 14
+    moderate:
+    - 15
+    - 20
+    loose:
+    - 21
+    - 32
+    confidence: low
+  tWRWRDG:
+    tight:
+    - 4
+    - 10
+    moderate:
+    - 11
+    - 16
+    loose:
+    - 17
+    - 28
+    confidence: low
+  tRDRD:
+    tight:
+    - 4
+    - 12
+    moderate:
+    - 13
+    - 18
+    loose:
+    - 19
+    - 28
+    confidence: low
+  tRDRDSG:
+    tight:
+    - 4
+    - 14
+    moderate:
+    - 15
+    - 20
+    loose:
+    - 21
+    - 32
+    confidence: low
+  tRDRDDG:
+    tight:
+    - 4
+    - 10
+    moderate:
+    - 11
+    - 16
+    loose:
+    - 17
+    - 28
+    confidence: low
+  tRDRDSD:
+    tight:
+    - 1
+    - 14
+    moderate:
+    - 15
+    - 20
+    loose:
+    - 21
+    - 32
+    confidence: low
+  tRDRDDD:
+    tight:
+    - 1
+    - 16
+    moderate:
+    - 17
+    - 24
+    loose:
+    - 25
+    - 36
+    confidence: low
+  tWRPRE:
+    tight:
+    - 70
+    - 110
+    moderate:
+    - 111
+    - 140
+    loose:
+    - 141
+    - 180
+    confidence: low
+  tRDPRE:
+    tight:
+    - 8
+    - 14
+    moderate:
+    - 15
+    - 20
+    loose:
+    - 21
+    - 32
+    confidence: low
+  tPPD:
+    tight:
+    - 0
+    - 1
+    moderate:
+    - 2
+    - 4
+    loose:
+    - 5
+    - 8
+    confidence: low

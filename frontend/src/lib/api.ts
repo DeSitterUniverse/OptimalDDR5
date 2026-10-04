@@ -4,7 +4,7 @@ import { evaluateStaticProfile, importHwinfoStatic, loadStaticConfig } from "./s
 let configPromise: Promise<ConfigData> | null = null;
 
 export async function fetchConfig(): Promise<ConfigData> {
-  configPromise ??= loadStaticConfig();
+  configPromise ??= loadStaticConfig().catch((error) => { configPromise = null; throw error; });
   return configPromise;
 }
 
@@ -12,6 +12,6 @@ export async function evaluateProfile(profile: MemoryProfile): Promise<Evaluatio
   return evaluateStaticProfile(profile, await fetchConfig());
 }
 
-export async function importHwinfo(file: File, profile: MemoryProfile): Promise<{ profile: MemoryProfile; evaluation: Evaluation }> {
+export async function importHwinfo(file: File, profile: MemoryProfile): Promise<{ profile: MemoryProfile; evaluation: Evaluation; warnings: string[] }> {
   return importHwinfoStatic(file, profile, await fetchConfig());
 }

@@ -38,6 +38,7 @@ def load_database() -> dict[str, Any]:
     platform_raw = read_yaml(CONFIG_DIR / "platform_profiles.yaml").get("platform_profiles", {})
     voltage_raw = read_yaml(CONFIG_DIR / "voltage_profiles.yaml").get("voltages", {})
     aliases = read_yaml(CONFIG_DIR / "timing_aliases.yaml").get("aliases", {})
+    reference_ranges = read_yaml(CONFIG_DIR / "timing_reference_ranges.yaml")
     power_model = read_yaml(CONFIG_DIR / "power_model.yaml")
     examples = read_yaml(CONFIG_DIR / "example_profiles.yaml").get("profiles", [])
 
@@ -61,6 +62,7 @@ def load_database() -> dict[str, Any]:
         "platform_profiles": platform_profiles,
         "voltage_profiles": voltage_profiles,
         "timing_aliases": aliases,
+        "timing_reference_ranges": reference_ranges,
         "power_model": power_model,
         "example_profiles": examples,
     }

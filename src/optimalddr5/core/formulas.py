@@ -22,10 +22,10 @@ def theoretical_bandwidth_gbps(mtps: int | float, channels: int = 2, bytes_per_c
     return float(mtps) * channels * bytes_per_channel / 1000.0
 
 
-def timing_estimates(timings: dict[str, int | float], mtps: int) -> dict[str, float | None]:
+def timing_estimates(timings: dict[str, int | float], mtps: int, channels: int = 2) -> dict[str, float | None]:
     c = cycle_time_ns(mtps)
-    tcl = timings.get("tCL") or timings.get("CL")
-    trcdrd = timings.get("tRCDRD") or timings.get("tRCD")
+    tcl = timings.get("tCL", timings.get("CL"))
+    trcdrd = timings.get("tRCDRD", timings.get("tRCD"))
     trp = timings.get("tRP")
     tras = timings.get("tRAS")
     trc = timings.get("tRC")
@@ -43,5 +43,6 @@ def timing_estimates(timings: dict[str, int | float], mtps: int) -> dict[str, fl
         "trefi_interval_ns": timing_ns(trefi, mtps),
         "activate_to_read_ns": timing_ns(trcdrd, mtps),
         "precharge_ns": timing_ns(trp, mtps),
+        "theoretical_bandwidth_gbps": theoretical_bandwidth_gbps(mtps, channels),
         "theoretical_dual_channel_bandwidth_gbps": theoretical_bandwidth_gbps(mtps),
     }

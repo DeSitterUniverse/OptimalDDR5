@@ -7,8 +7,12 @@ export type MemoryProfile = {
   uclk_mclk_mode?: string;
   capacity_total_gb: number;
   dimm_count: number;
+  channel_count?: number;
   rank?: string;
   command_rate?: string;
+  notes?: string;
+  validation_status?: "untested" | "testing" | "passed" | "failed";
+  validation_notes?: string;
   voltages: Record<string, number | undefined>;
   timings: Record<string, number | undefined>;
 };
@@ -16,6 +20,7 @@ export type MemoryProfile = {
 export type ConfigData = {
   timing_definitions: Record<string, any>;
   timing_aliases: Record<string, string>;
+  timing_reference_ranges: Record<string, any>;
   die_profiles: Record<string, DieProfile>;
   platform_profiles: Record<string, any>;
   voltage_profiles: Record<string, any>;

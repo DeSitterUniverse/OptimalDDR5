@@ -1,3 +1,4 @@
+import { canonicalTimingKey, MAX_IMPORT_BYTES, profileErrors } from "./profiles";
 import type { ConfigData, Evaluation, MemoryProfile } from "./types";
 
 type TimingDefinition = Record<string, any>;
@@ -6,99 +7,17 @@ type TimingResult = Record<string, any>;
 const CONFIG_FILES = [
   "timing_definitions",
   "timing_aliases",
+  "timing_reference_ranges",
   "die_profiles",
   "platform_profiles",
   "voltage_profiles",
   "power_model",
   "example_profiles"
 ] as const;
-const DEFAULT_TIMINGS: Record<string, number> = {
-  tCL: 36,
-  tRCD: 36,
-  tRCDRD: 36,
-  tRCDWR: 36,
-  tRP: 36,
-  tRAS: 72,
-  tRC: 108,
-  tRFC: 560,
-  tRFC2: 420,
-  tRFCsb: 320,
-  tREFI: 32768,
-  tRRDS: 8,
-  tRRDL: 12,
-  tFAW: 32,
-  tWR: 48,
-  tWTRS: 8,
-  tWTRL: 16,
-  tRTP: 12,
-  tCWL: 34,
-  tCKE: 8,
-  tMOD: 48,
-  tXP: 8,
-  tXS: 216,
-  tXSDLL: 768,
-  tWRRD: 12,
-  tWRRDSG: 64,
-  tWRRDDG: 48,
-  tWRWR: 12,
-  tWRWRSG: 12,
-  tWRWRDG: 8,
-  tRDRD: 12,
-  tRDRDSG: 12,
-  tRDRDDG: 8,
-  tRDRDSD: 12,
-  tRDRDDD: 16,
-  tWRPRE: 96,
-  tRDPRE: 12,
-  tPPD: 0
-};
-const GENERAL_RANGE_REFERENCE_MTPS = 6000;
-
-const GENERAL_DDR5_RANGES: Record<string, any> = {
-  tCL: { tight: [28, 36], moderate: [38, 42], loose: [44, 52], confidence: "low" },
-  tRCD: { tight: [34, 42], moderate: [44, 50], loose: [52, 64], confidence: "low" },
-  tRCDRD: { tight: [34, 42], moderate: [44, 50], loose: [52, 64], confidence: "low" },
-  tRCDWR: { tight: [30, 42], moderate: [44, 50], loose: [52, 64], confidence: "low" },
-  tRP: { tight: [34, 42], moderate: [44, 50], loose: [52, 64], confidence: "low" },
-  tRAS: { tight: [28, 80], moderate: [81, 104], loose: [105, 132], confidence: "low" },
-  tRC: { tight: [64, 124], moderate: [125, 156], loose: [157, 192], confidence: "low" },
-  tRFC: { tight: [420, 620], moderate: [621, 820], loose: [821, 1100], confidence: "low" },
-  tRFC2: { tight: [300, 480], moderate: [481, 640], loose: [641, 900], confidence: "low" },
-  tRFCsb: { tight: [220, 380], moderate: [381, 520], loose: [521, 760], confidence: "low" },
-  tREFI: { tight: [50000, 65535], moderate: [32768, 49999], loose: [7800, 32767], confidence: "low" },
-  tRRDS: { tight: [4, 8], moderate: [9, 12], loose: [13, 20], confidence: "low" },
-  tRRDL: { tight: [8, 12], moderate: [13, 18], loose: [19, 28], confidence: "low" },
-  tFAW: { tight: [16, 32], moderate: [33, 48], loose: [49, 64], confidence: "low" },
-  tWR: { tight: [24, 56], moderate: [57, 72], loose: [73, 96], confidence: "low" },
-  tWTRS: { tight: [4, 8], moderate: [9, 14], loose: [15, 24], confidence: "low" },
-  tWTRL: { tight: [12, 24], moderate: [25, 36], loose: [37, 56], confidence: "low" },
-  tRTP: { tight: [8, 16], moderate: [17, 24], loose: [25, 36], confidence: "low" },
-  tCWL: { tight: [26, 36], moderate: [38, 44], loose: [46, 56], confidence: "low" },
-  tCKE: { tight: [4, 8], moderate: [9, 12], loose: [13, 20], confidence: "low" },
-  tMOD: { tight: [24, 48], moderate: [49, 64], loose: [65, 96], confidence: "low" },
-  tXP: { tight: [4, 8], moderate: [9, 12], loose: [13, 20], confidence: "low" },
-  tXS: { tight: [160, 260], moderate: [261, 380], loose: [381, 560], confidence: "low" },
-  tXSDLL: { tight: [512, 768], moderate: [769, 1024], loose: [1025, 1536], confidence: "low" },
-  tWRRD: { tight: [1, 16], moderate: [17, 48], loose: [49, 96], confidence: "low" },
-  tWRRDSG: { tight: [48, 66], moderate: [67, 82], loose: [83, 110], confidence: "low" },
-  tWRRDDG: { tight: [36, 52], moderate: [53, 70], loose: [71, 96], confidence: "low" },
-  tWRWR: { tight: [4, 12], moderate: [13, 18], loose: [19, 28], confidence: "low" },
-  tWRWRSG: { tight: [4, 14], moderate: [15, 20], loose: [21, 32], confidence: "low" },
-  tWRWRDG: { tight: [4, 10], moderate: [11, 16], loose: [17, 28], confidence: "low" },
-  tRDRD: { tight: [4, 12], moderate: [13, 18], loose: [19, 28], confidence: "low" },
-  tRDRDSG: { tight: [4, 14], moderate: [15, 20], loose: [21, 32], confidence: "low" },
-  tRDRDDG: { tight: [4, 10], moderate: [11, 16], loose: [17, 28], confidence: "low" },
-  tRDRDSD: { tight: [1, 14], moderate: [15, 20], loose: [21, 32], confidence: "low" },
-  tRDRDDD: { tight: [1, 16], moderate: [17, 24], loose: [25, 36], confidence: "low" },
-  tWRPRE: { tight: [70, 110], moderate: [111, 140], loose: [141, 180], confidence: "low" },
-  tRDPRE: { tight: [8, 14], moderate: [15, 20], loose: [21, 32], confidence: "low" },
-  tPPD: { tight: [0, 1], moderate: [2, 4], loose: [5, 8], confidence: "low" }
-};
-
 export async function loadStaticConfig(): Promise<ConfigData> {
   const loaded = await Promise.all(
     CONFIG_FILES.map(async (name) => {
-      const res = await fetch(`/data/${name}.json`);
+      const res = await fetch(`${import.meta.env.BASE_URL}data/${name}.json`);
       if (!res.ok) throw new Error(`Failed to load ${name}.json`);
       return [name, await res.json()] as const;
     })
@@ -107,6 +26,7 @@ export async function loadStaticConfig(): Promise<ConfigData> {
   return {
     timing_definitions: withIds(raw.timing_definitions.timings, "timing_id"),
     timing_aliases: raw.timing_aliases.aliases ?? {},
+    timing_reference_ranges: raw.timing_reference_ranges,
     die_profiles: withIds(raw.die_profiles.die_profiles, "die_id"),
     platform_profiles: withIds(raw.platform_profiles.platform_profiles, "platform_id"),
     voltage_profiles: withIds(raw.voltage_profiles.voltages, "voltage_id"),
@@ -117,14 +37,16 @@ export async function loadStaticConfig(): Promise<ConfigData> {
 }
 
 export function evaluateStaticProfile(input: MemoryProfile, config: ConfigData): Evaluation {
+  const errors = profileErrors(input, config);
+  if (errors.length) throw new Error(errors.join(" "));
   const profile = structuredClone(input);
+  profile.channel_count ??= Math.min(2, profile.dimm_count);
   profile.timings = normalizeTimingKeys(profile.timings ?? {}, config);
   profile.voltages = { ...(profile.voltages ?? {}) };
-  const die = config.die_profiles[profile.die_id] ?? Object.values(config.die_profiles)[0];
-  const platform = config.platform_profiles[profile.platform_id] ?? Object.values(config.platform_profiles)[0];
-  applyDefaults(profile, config, die);
+  const die = config.die_profiles[profile.die_id] ?? { die_id: "unknown", vendor: "Unknown", generation_or_revision: "unconfirmed die", timing_ranges: {}, sources: [] };
+  const platform = config.platform_profiles[profile.platform_id];
   const timingResults = Object.entries(config.timing_definitions).map(([id, definition]) =>
-    evaluateTiming(id, definition, profile.timings[id], profile.mtps, die)
+    evaluateTiming(id, definition, profile.timings[id], profile.mtps, die, config)
   );
   applyTimingRuleNotes(timingResults, profile.timings);
   const voltageResults = Object.entries(config.voltage_profiles)
@@ -141,29 +63,32 @@ export function evaluateStaticProfile(input: MemoryProfile, config: ConfigData):
       die: `${die.vendor} ${die.generation_or_revision}`,
       mtps: profile.mtps,
       dimm_count: profile.dimm_count,
+      channel_count: profile.channel_count,
       capacity_total_gb: profile.capacity_total_gb,
       rank: profile.rank,
       command_rate: profile.command_rate,
       uclk_mclk_mode: profile.uclk_mclk_mode || inferUclkMode(profile)
     },
     timing_results: timingResults,
-    latency_estimates: timingEstimates(profile.timings, profile.mtps),
+    latency_estimates: timingEstimates(profile.timings, profile.mtps, profile.channel_count),
     category_headroom: categoryHeadroom,
-    overall_headroom_score: knownScores.length ? round(sum(knownScores) / knownScores.length, 2) : 0,
+    overall_headroom_score: meanScore(knownScores),
     voltage_results: voltageResults,
     voltage_pressure_score: round(sum(voltageResults.map((v) => (v.risk_level === "high" ? 1 : v.risk_level === "elevated" ? 0.55 : 0))) / Math.max(voltageResults.length, 1), 2),
     power_estimate: power,
     platform_notes: platformNotes,
-    recommendations: [],
+    recommendations: buildRecommendations(timingResults, voltageResults),
     bottleneck_categories: [],
-    sources: []
+    sources: [...(die.sources ?? []), ...(platform.sources ?? [])]
   };
 }
 
 export async function importHwinfoStatic(file: File, baseProfile: MemoryProfile, config: ConfigData) {
-  const text = await file.text();
-  const profile = parseHwinfoLog(text, structuredClone(baseProfile));
-  return { profile, evaluation: evaluateStaticProfile(profile, config) };
+  if (file.size > MAX_IMPORT_BYTES) throw new Error("Import files must be 5 MB or smaller.");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const text = decodeHwinfo(bytes);
+  const { profile, warnings } = parseHwinfoLog(text, baseProfile);
+  return { profile, warnings, evaluation: evaluateStaticProfile(profile, config) };
 }
 
 function withIds(items: Record<string, any>, idKey: string) {
@@ -171,34 +96,17 @@ function withIds(items: Record<string, any>, idKey: string) {
 }
 
 function normalizeTimingKeys(timings: Record<string, number | undefined>, config: ConfigData) {
-  const aliasMap = Object.fromEntries(Object.entries(config.timing_aliases).map(([k, v]) => [k.toLowerCase(), v]));
   const normalized: Record<string, number> = {};
   for (const [key, value] of Object.entries(timings)) {
     if (value === undefined || value === null) continue;
-    normalized[aliasMap[key.toLowerCase()] ?? key] = value;
+    normalized[canonicalTimingKey(key, config)] = value;
   }
   return normalized;
 }
 
-function applyDefaults(profile: MemoryProfile, config: ConfigData, die: any) {
-  for (const [id, def] of Object.entries(config.voltage_profiles)) {
-    if (!(id in profile.voltages) && (def as any).typical_stock_range) profile.voltages[id] = (def as any).typical_stock_range[0];
-  }
-  const missingTcwl = profile.timings.tCWL === undefined;
-  const missingTrc = profile.timings.tRC === undefined;
-  for (const [id, definition] of Object.entries(config.timing_definitions)) {
-    if (profile.timings[id] !== undefined) continue;
-    const dieRange = recommendedRangeForTiming(die, profile.mtps, id, definition.lower_is_better).range;
-    const value = defaultTimingCycles(dieRange ?? ddr5FloorRange(id, profile.mtps, definition.lower_is_better), definition.lower_is_better);
-    profile.timings[id] = value ?? DEFAULT_TIMINGS[id] ?? 0;
-  }
-  if (missingTcwl && profile.timings.tCL !== undefined) profile.timings.tCWL = Math.max(0, Number(profile.timings.tCL) - 2);
-  if (missingTrc && profile.timings.tRAS !== undefined && profile.timings.tRP !== undefined) profile.timings.tRC = Number(profile.timings.tRAS) + Number(profile.timings.tRP);
-}
-
-function evaluateTiming(id: string, definition: TimingDefinition, cycles: number | undefined, mtps: number, die: any): TimingResult {
+function evaluateTiming(id: string, definition: TimingDefinition, cycles: number | undefined, mtps: number, die: any, config: ConfigData): TimingResult {
   const dieRecommendation = recommendedRangeForTiming(die, mtps, id, definition.lower_is_better);
-  const floorRange = ddr5FloorRange(id, mtps, definition.lower_is_better);
+  const floorRange = referenceRange(id, mtps, definition.lower_is_better, config);
   const rangeData = dieRecommendation.range ?? floorRange;
   const floorTarget = targetFromRange(floorRange, definition.lower_is_better);
   const recommendedTarget = targetFromRange(rangeData, definition.lower_is_better);
@@ -225,7 +133,7 @@ function evaluateTiming(id: string, definition: TimingDefinition, cycles: number
   }
   const [classification, score, target, headroom] = classifyValue(Number(cycles), rangeData, definition.lower_is_better);
   const fallback = !dieRecommendation.range;
-  const rangeNotes = [dieRecommendation.note, fallback ? "No die-specific range; using the DDR5 floor." : null].filter(Boolean) as string[];
+  const rangeNotes = [dieRecommendation.note, fallback ? "No die-specific range; using a low-confidence community comparison, not a JEDEC floor." : null].filter(Boolean) as string[];
   return {
     timing_id: id,
     display_name: definition.display_name,
@@ -237,10 +145,10 @@ function evaluateTiming(id: string, definition: TimingDefinition, cycles: number
     importance: definition.importance ?? "medium",
     classification,
     headroom_score: score,
-    target_cycles: target ?? DEFAULT_TIMINGS[id] ?? null,
+    target_cycles: target,
     floor_cycles: floorTarget,
-    recommended_cycles: recommendedTarget ?? target ?? DEFAULT_TIMINGS[id] ?? null,
-    headroom_cycles: headroom ?? headroomFromTarget(Number(cycles), DEFAULT_TIMINGS[id], definition.lower_is_better),
+    recommended_cycles: recommendedTarget ?? target,
+    headroom_cycles: headroom,
     notes: [...rangeNotes, ...notes],
     source_confidence: rangeData?.confidence ?? "low"
   };
@@ -292,13 +200,15 @@ function estimatePower(profile: MemoryProfile, die: any, config: ConfigData) {
     heat_level: heatLevel(watts, model.heat_thresholds_w_per_dimm ?? {}),
     effective_voltage: round(effectiveVoltage, 3),
     heat_basis: "single_dimm_peak",
-    notes: ["Heat level is based on estimated peak watts for one DIMM.", "The model uses VDD/VDDQ, die family, and module capacity; timing effects are intentionally not modeled."]
+    notes: ["Unvalidated comparative model; watts and load bands are not sensor measurements.", ...(["VDD", "VDDQ"].some((key) => profile.voltages[key] == null) ? ["Missing VDD/VDDQ uses 1.10 V assumptions."] : [])]
   };
 }
 
-function parseHwinfoLog(text: string, base: MemoryProfile): MemoryProfile {
+export function parseHwinfoLog(text: string, input: MemoryProfile): { profile: MemoryProfile; warnings: string[] } {
+  const base = structuredClone(input);
   const memoryText = memorySection(text);
-  const timings = { ...(base.timings ?? {}) };
+  const timings: Record<string, number> = {};
+  const warnings = ["Only report timings were imported. Voltages, platform, and die selection were preserved; verify them manually.", "Missing report timings are left blank. Any earlier validation result was cleared."];
   for (const [id, patterns] of Object.entries(TIMING_PATTERNS)) {
     const value = firstNumber(memoryText, patterns);
     if (value !== null) timings[id] = value;
@@ -316,19 +226,22 @@ function parseHwinfoLog(text: string, base: MemoryProfile): MemoryProfile {
     });
   }
   const clock = firstNumber(memoryText, [/\bCurrent Memory Clock\b.*?(\d+(?:\.\d+)?)\s*MHz/i, /\bMemory Clock\b.*?(\d+(?:\.\d+)?)\s*MHz/i]);
-  if (clock && clock < 4000) base.mtps = Math.round(clock * 2);
+  if (clock) base.mtps = Math.round(clock * 2);
   const dimms = firstNumber(memoryText, [/\bNumber Of Memory Modules\b.*?(\d+)/i]);
   if (dimms) base.dimm_count = dimms;
   const capacity = firstNumber(memoryText, [/\bTotal Memory Size\b.*?(\d+)\s*G/i, /\bMemory Size\b.*?(\d+)\s*G/i]);
   if (capacity) base.capacity_total_gb = capacity;
   const cr = /Command Rate \(CR\):\s*([12]T)/i.exec(memoryText);
   if (cr) base.command_rate = cr[1].toUpperCase();
-  const die = predictDie(memoryText);
-  if (die) base.die_id = die;
-  if (memoryText.includes("Intel Extreme Memory Profile") && base.platform_id === "ryzen_am5_zen4") base.platform_id = "raptor_lake_ddr5";
+  const die = predictDie(text);
+  if (die) warnings.push(`Manufacturer/density suggests ${die}, but does not identify the die revision. Confirm before selecting it.`);
+  if (!Object.keys(timings).length && !clock) throw new Error("No current memory timings or memory clock found. Choose a HWiNFO text report .LOG, not a sensor CSV.");
+  if (base.dimm_count === 1) base.channel_count = 1;
+  base.validation_status = "untested";
+  base.validation_notes = "";
   base.profile_name = "Imported HWiNFO memory profile";
   base.timings = timings;
-  return base;
+  return { profile: base, warnings };
 }
 
 const TIMING_PATTERNS: Record<string, RegExp[]> = {
@@ -338,6 +251,11 @@ const TIMING_PATTERNS: Record<string, RegExp[]> = {
   tRCDWR: [/\btRCDWR\b.*?(\d+(?:\.\d+)?)/i, /\btRCD Write\b.*?(\d+(?:\.\d+)?)/i],
   tRP: [/\btRP\b.*?(\d+(?:\.\d+)?)/i],
   tRAS: [/\btRAS\b.*?(\d+(?:\.\d+)?)/i],
+  tREFI: [/\btREFI\b.*?(\d+(?:\.\d+)?)/i],
+  tRFC2: [/\btRFC2\b.*?(\d+(?:\.\d+)?)/i],
+  tRFCsb: [/\btRFC(?:sb|_sb|pb)\b.*?(\d+(?:\.\d+)?)/i],
+  tCWL: [/\btCWL\b.*?(\d+(?:\.\d+)?)/i],
+  tWRPRE: [/\btWRPRE\b.*?(\d+(?:\.\d+)?)/i],
   tRC: [/\btRC\b.*?(\d+(?:\.\d+)?)/i, /Row Cycle Time \(tRC\):\s*(\d+)T/i],
   tRFC: [/\btRFC\b.*?(\d+(?:\.\d+)?)/i, /Refresh Cycle Time \(tRFC\):\s*(\d+)T/i],
   tRDRDSG: [/Read to Read Delay \(tRDRD_SG\/.*?Same Bank Group:\s*(\d+)T/i],
@@ -356,9 +274,18 @@ const TIMING_PATTERNS: Record<string, RegExp[]> = {
 };
 
 function memorySection(text: string) {
-  const header = /^Memory\s+-{5,}\s*$/im.exec(text);
-  if (header) return text.slice(header.index + header[0].length);
-  return text;
+  text = text.replace(/\r\n?/g, "\n");
+  const header = /^(?:Memory[ \t]+-{5,}|-{5,}[ \t]*Memory[ \t]*-+)[ \t]*$/im.exec(text);
+  if (!header) throw new Error("No Memory section found. Export a HWiNFO text report .LOG.");
+  const section = text.slice(header.index + header[0].length);
+  const stop = /^(?:Row:[ \t]*\d+|[^\r\n]+[ \t]+-{5,}|-{5,}[ \t]*[^-\r\n]+[ \t]*-+|[ \t]*\[(?:Intel Extreme Memory Profile|AMD EXPO|JEDEC))/im.exec(section);
+  return stop ? section.slice(0, stop.index) : section;
+}
+
+export function decodeHwinfo(bytes: Uint8Array): string {
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder("utf-16le").decode(bytes);
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder("utf-16be").decode(bytes);
+  return new TextDecoder("utf-8").decode(bytes);
 }
 
 function firstNumber(text: string, patterns: RegExp[]) {
@@ -408,8 +335,8 @@ function recommendedRangeForTiming(die: any, mtps: number, timingId: string, low
   };
 }
 
-function ddr5FloorRange(timingId: string, mtps: number, lowerIsBetter: boolean | string) {
-  return scaledRange(GENERAL_DDR5_RANGES[timingId], GENERAL_RANGE_REFERENCE_MTPS, mtps, lowerIsBetter);
+function referenceRange(timingId: string, mtps: number, lowerIsBetter: boolean | string, config: ConfigData) {
+  return scaledRange(config.timing_reference_ranges.ranges[timingId], config.timing_reference_ranges.reference_mtps, mtps, lowerIsBetter);
 }
 
 function interpolateRange(lowRange: any, highRange: any, lowMtps: number, highMtps: number, mtps: number, lowerIsBetter: boolean | string) {
@@ -420,7 +347,7 @@ function interpolateRange(lowRange: any, highRange: any, lowMtps: number, highMt
     if (!lowRange?.[band] || !highRange?.[band]) continue;
     result[band] = lowRange[band].map((value: number, index: number) => Math.round(value + (Number(highRange[band][index]) - value) * ratio));
   }
-  result.confidence = lowerConfidence(lowRange?.confidence, highRange?.confidence);
+  result.confidence = lowerConfidence("medium", lowerConfidence(lowRange?.confidence, highRange?.confidence));
   return result;
 }
 
@@ -429,6 +356,7 @@ function scaledRange(rangeData: any, sourceMtps: number, targetMtps: number, low
   if (lowerIsBetter === false || sourceMtps === targetMtps) return copyRange(rangeData);
   const ratio = targetMtps / sourceMtps;
   const result = copyRange(rangeData);
+  result.confidence = "low";
   for (const band of ["tight", "moderate", "loose", "very_loose"]) {
     if (!rangeData[band]) continue;
     result[band] = rangeData[band].map((value: number) => Math.max(0, Math.round(Number(value) * ratio)));
@@ -447,13 +375,6 @@ function copyRange(rangeData: any) {
 function lowerConfidence(a?: string, b?: string) {
   const rank: Record<string, number> = { high: 3, medium: 2, low: 1 };
   return (rank[a ?? "low"] ?? 1) <= (rank[b ?? "low"] ?? 1) ? a ?? "low" : b ?? "low";
-}
-
-function defaultTimingCycles(rangeData: any, lowerIsBetter: boolean | string) {
-  if (!rangeData) return null;
-  if (rangeData.moderate) return Number(rangeData.moderate[0]);
-  if (rangeData.tight) return Number(lowerIsBetter === false ? rangeData.tight[1] : rangeData.tight[0]);
-  return null;
 }
 
 function classifyValue(value: number, rangeData: any, lowerIsBetter: boolean | string): [string, number, number | null, number | null] {
@@ -493,7 +414,7 @@ function applyTimingRuleNotes(results: TimingResult[], timings: Record<string, n
   }
 }
 
-function timingEstimates(timings: Record<string, number | undefined>, mtps: number) {
+function timingEstimates(timings: Record<string, number | undefined>, mtps: number, channels = 2) {
   return {
     real_clock_mhz: mtps / 2,
     cycle_time_ns: cycleTimeNs(mtps),
@@ -506,6 +427,7 @@ function timingEstimates(timings: Record<string, number | undefined>, mtps: numb
     trefi_interval_ns: timingNs(timings.tREFI, mtps),
     activate_to_read_ns: timingNs(timings.tRCDRD ?? timings.tRCD, mtps),
     precharge_ns: timingNs(timings.tRP, mtps),
+    theoretical_bandwidth_gbps: (mtps * channels * 8) / 1000,
     theoretical_dual_channel_bandwidth_gbps: (mtps * 2 * 8) / 1000
   };
 }
@@ -535,7 +457,7 @@ function platformCaveats(profile: MemoryProfile, quirks: string[]) {
 
 function inferUclkMode(profile: MemoryProfile) {
   if (!profile.platform_id.includes("am5")) return "N/A";
-  return profile.mtps <= 6400 ? "likely 1:1" : "likely 1:2 or board-dependent";
+  return "Unknown; verify after training";
 }
 
 function categoryScores(rows: TimingResult[]) {
@@ -544,7 +466,11 @@ function categoryScores(rows: TimingResult[]) {
     if (row.classification === "unknown") continue;
     (buckets[row.category] ||= []).push(row.headroom_score);
   }
-  return Object.fromEntries(Object.entries(buckets).map(([key, values]) => [key, round(sum(values) / values.length, 2)]));
+  return Object.fromEntries(Object.entries(buckets).map(([key, values]) => [key, meanScore(values)]));
+}
+
+function meanScore(values: number[]) {
+  return values.length ? Math.round(sum(values.map((value) => Math.round(value * 100))) / values.length) / 100 : 0;
 }
 
 function between(value: number, bounds: number[]) {
@@ -565,4 +491,11 @@ function sum(values: number[]) {
 function round(value: number, places: number) {
   const factor = 10 ** places;
   return Math.round(value * factor) / factor;
+}
+
+function buildRecommendations(timings: TimingResult[], voltages: Array<Record<string, any>>) {
+  const notes: string[] = [];
+  for (const row of timings.filter((row) => ["loose", "very loose"].includes(row.classification)).slice(0, 3)) notes.push(`${row.timing_id} is ${row.classification} against the reference range. Review its notes and evidence before changing it.`);
+  if (voltages.some((row) => ["high", "elevated"].includes(row.risk_level))) notes.push("Review elevated voltage fields against your CPU, DIMM, and board documentation; comparison bands are not safe limits.");
+  return notes;
 }

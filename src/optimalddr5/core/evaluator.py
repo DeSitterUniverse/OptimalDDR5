@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import math
 
 from optimalddr5.core.formulas import timing_estimates, timing_ns
 from optimalddr5.core.models import (
@@ -14,74 +15,38 @@ from optimalddr5.core.models import (
     VoltageResult,
 )
 from optimalddr5.core.power import estimate_power
-from optimalddr5.core.recommendations import build_recommendations, category_scores, likely_bottlenecks
-
-
-DEFAULT_TIMINGS: dict[str, float] = {
-    "tCL": 36,
-    "tRCD": 36,
-    "tRCDRD": 36,
-    "tRCDWR": 36,
-    "tRP": 36,
-    "tRAS": 72,
-    "tRC": 108,
-    "tRFC": 480,
-    "tRFC2": 320,
-    "tRFCsb": 260,
-    "tREFI": 32768,
-    "tRRDS": 4,
-    "tRRDL": 8,
-    "tFAW": 16,
-    "tWR": 54,
-    "tWTRS": 8,
-    "tWTRL": 20,
-    "tRTP": 14,
-    "tCWL": 34,
-    "tCKE": 8,
-    "tMOD": 48,
-    "tXP": 8,
-    "tXS": 216,
-    "tXSDLL": 768,
-    "tWRRD": 48,
-    "tWRRDSG": 64,
-    "tWRRDDG": 48,
-    "tWRWR": 14,
-    "tWRWRSG": 14,
-    "tWRWRDG": 8,
-    "tRDRD": 14,
-    "tRDRDSG": 14,
-    "tRDRDDG": 8,
-    "tRDRDSD": 14,
-    "tRDRDDD": 16,
-    "tWRPRE": 110,
-    "tRDPRE": 12,
-    "tPPD": 0,
-}
+from optimalddr5.core.recommendations import build_recommendations, category_scores, likely_bottlenecks, mean_score
 
 
 def evaluate_profile(profile: MemoryProfile, db: dict[str, Any]) -> EvaluationResult:
-    aliases = db["timing_aliases"]
+    profile = profile.model_copy(deep=True)
+    aliases = {**{alias: key for key, definition in db["timing_definitions"].items() for alias in [key, *definition.aliases]}, **db["timing_aliases"]}
     timings = normalize_timing_keys(profile.timings, aliases)
     profile.timings = timings
 
-    die = db["die_profiles"].get(profile.die_id) or next(iter(db["die_profiles"].values()))
-    platform = db["platform_profiles"].get(profile.platform_id) or next(iter(db["platform_profiles"].values()))
-    apply_profile_defaults(profile, db, die.timing_ranges)
+    die = db["die_profiles"].get(profile.die_id)
+    platform = db["platform_profiles"].get(profile.platform_id)
+    if platform is None or (die is None and profile.die_id != "unknown"):
+        raise ValueError("Unknown platform or die; select a supported platform and known or unknown die")
+    if any(key not in db["timing_definitions"] for key in timings):
+        raise ValueError("Unrecognized timing field")
+    if any(key not in db["voltage_profiles"] for key in profile.voltages):
+        raise ValueError("Unrecognized voltage field")
     timing_results = [
-        evaluate_timing(defn, profile.timings.get(timing_id), profile.mtps, die.timing_ranges)
+        evaluate_timing(defn, profile.timings.get(timing_id), profile.mtps, die.timing_ranges if die else {}, db["timing_reference_ranges"])
         for timing_id, defn in db["timing_definitions"].items()
     ]
     apply_timing_rule_notes(timing_results, profile.timings)
     voltage_results = [
-        evaluate_voltage(vdef, profile.voltages.get(voltage_id), platform.platform_id, die.voltage_ranges)
+        evaluate_voltage(vdef, profile.voltages.get(voltage_id), platform.platform_id, {})
         for voltage_id, vdef in db["voltage_profiles"].items()
         if platform.platform_id in vdef.platform_scope or "all" in vdef.platform_scope
     ]
-    power = estimate_power(profile, die.model_dump(), db["power_model"])
+    power = estimate_power(profile, die.model_dump() if die else {"die_id": "unknown"}, db["power_model"])
     platform_notes = platform_caveats(profile, platform.quirks)
     cat_scores = category_scores(timing_results)
     known_scores = [r.headroom_score for r in timing_results if r.classification != Classification.UNKNOWN]
-    overall = round(sum(known_scores) / len(known_scores), 2) if known_scores else 0.0
+    overall = mean_score(known_scores)
     voltage_pressure = round(
         sum(1.0 if v.risk_level == "high" else 0.55 if v.risk_level == "elevated" else 0.0 for v in voltage_results)
         / max(len(voltage_results), 1),
@@ -89,21 +54,22 @@ def evaluate_profile(profile: MemoryProfile, db: dict[str, Any]) -> EvaluationRe
     )
     recommendations = build_recommendations(timing_results, voltage_results, platform_notes)
     bottlenecks = likely_bottlenecks(timing_results, voltage_results, platform_notes, power.heat_level.value)
-    sources = dedupe_sources([*die.sources, *platform.sources, *[s for v in db["voltage_profiles"].values() for s in v.sources]])
+    sources = dedupe_sources([*(die.sources if die else []), *platform.sources, *[s for v in db["voltage_profiles"].values() for s in v.sources]])
     return EvaluationResult(
         profile=profile,
         summary={
             "platform": platform.display_name,
-            "die": f"{die.vendor} {die.generation_or_revision}",
+            "die": f"{die.vendor} {die.generation_or_revision}" if die else "Unknown unconfirmed die",
             "mtps": profile.mtps,
             "dimm_count": profile.dimm_count,
+            "channel_count": profile.channel_count,
             "capacity_total_gb": profile.capacity_total_gb,
             "rank": profile.rank,
             "command_rate": profile.command_rate,
             "uclk_mclk_mode": profile.uclk_mclk_mode or infer_uclk_mode(profile),
         },
         timing_results=timing_results,
-        latency_estimates=timing_estimates(timings, profile.mtps),
+        latency_estimates=timing_estimates(timings, profile.mtps, profile.channel_count),
         category_headroom=cat_scores,
         overall_headroom_score=overall,
         voltage_results=voltage_results,
@@ -122,7 +88,9 @@ def normalize_timing_keys(timings: dict[str, int | float | None], aliases: dict[
     for key, value in timings.items():
         if value is None:
             continue
-        canonical = alias_map.get(key.lower(), key)
+        canonical = alias_map.get(key.strip().lower(), key)
+        if canonical in normalized and normalized[canonical] != value:
+            raise ValueError(f"Conflicting values for {canonical}")
         normalized[canonical] = value
     return normalized
 
@@ -132,9 +100,12 @@ def evaluate_timing(
     cycles: int | float | None,
     mtps: int,
     die_ranges: dict[str, Any],
+    reference_ranges: dict[str, Any],
 ) -> TimingResult:
     source_confidence = "unknown"
     notes = [*definition.dependency_notes, *definition.platform_notes]
+    range_data, range_note = recommended_range(die_ranges, mtps, definition.timing_id, definition.lower_is_better)
+    floor_range = scaled_range(reference_ranges["ranges"].get(definition.timing_id), reference_ranges["reference_mtps"], mtps, definition.lower_is_better)
     if cycles is None:
         return TimingResult(
             timing_id=definition.timing_id,
@@ -147,23 +118,23 @@ def evaluate_timing(
             importance=definition.importance,
             classification=Classification.UNKNOWN,
             headroom_score=0.0,
-            target_cycles=None,
+            target_cycles=target_from_range(range_data or floor_range, definition.lower_is_better) if (range_data or floor_range) else None,
+            floor_cycles=target_from_range(floor_range, definition.lower_is_better) if floor_range else None,
+            recommended_cycles=target_from_range(range_data or floor_range, definition.lower_is_better) if (range_data or floor_range) else None,
             headroom_cycles=None,
             notes=["Missing timing; not scored.", *notes],
             source_confidence=source_confidence,
         )
-    range_data = nearest_frequency_ranges(die_ranges, mtps).get(definition.timing_id)
+    if range_note:
+        notes.insert(0, range_note)
+    if not range_data:
+        notes.insert(0, "No die-specific range; using a low-confidence community comparison, not a JEDEC floor.")
+    range_data = range_data or floor_range
     classification, score, target_cycles, headroom_cycles = classify_value(float(cycles), range_data, definition.lower_is_better)
     if range_data:
         source_confidence = range_data.get("confidence", "medium")
     else:
         notes.insert(0, "No die/frequency range in database; value converted but not scored.")
-    target_cycles = target_cycles if target_cycles is not None else DEFAULT_TIMINGS.get(definition.timing_id)
-    headroom_cycles = (
-        headroom_cycles
-        if headroom_cycles is not None
-        else headroom_from_target(float(cycles), target_cycles, definition.lower_is_better)
-    )
     return TimingResult(
         timing_id=definition.timing_id,
         display_name=definition.display_name,
@@ -176,18 +147,50 @@ def evaluate_timing(
         classification=classification,
         headroom_score=score,
         target_cycles=target_cycles,
+        floor_cycles=target_from_range(floor_range, definition.lower_is_better) if floor_range else None,
+        recommended_cycles=target_cycles,
         headroom_cycles=headroom_cycles,
         notes=notes,
         source_confidence=source_confidence,
     )
 
 
-def nearest_frequency_ranges(die_ranges: dict[str, Any], mtps: int) -> dict[str, Any]:
-    buckets = die_ranges.get("by_frequency", {})
-    if not buckets:
-        return {}
-    nearest = min(buckets.keys(), key=lambda key: abs(int(key) - int(mtps)))
-    return buckets.get(nearest, {})
+def scaled_range(data: dict | None, source: int, target: int, lower_is_better: bool | str) -> dict | None:
+    if data is None:
+        return None
+    result = dict(data)
+    if lower_is_better is not False and source != target:
+        result["confidence"] = "low"
+        for band in ("tight", "moderate", "loose", "very_loose"):
+            if data.get(band):
+                result[band] = [max(0, math.floor(float(v) * target / source + 0.5)) for v in data[band]]
+    return result
+
+
+def recommended_range(die_ranges: dict, mtps: int, timing_id: str, lower_is_better: bool | str) -> tuple[dict | None, str | None]:
+    buckets = {int(key): value for key, value in die_ranges.get("by_frequency", {}).items()}
+    available = sorted(key for key, value in buckets.items() if timing_id in value)
+    if not available:
+        return None, None
+    if mtps in available:
+        return buckets[mtps][timing_id], None
+    lower = max((key for key in available if key < mtps), default=None)
+    higher = min((key for key in available if key > mtps), default=None)
+    if lower is not None and higher is not None:
+        low, high = buckets[lower][timing_id], buckets[higher][timing_id]
+        if lower_is_better is False:
+            result = dict(low if mtps - lower <= higher - mtps else high)
+        else:
+            result = dict(low)
+            ratio = (mtps - lower) / (higher - lower)
+            for band in ("tight", "moderate", "loose", "very_loose"):
+                if low.get(band) and high.get(band):
+                    result[band] = [math.floor(float(v) + (float(high[band][i]) - float(v)) * ratio + 0.5) for i, v in enumerate(low[band])]
+            ranks = {"high": 3, "medium": 2, "low": 1}
+            result["confidence"] = min(("medium", low.get("confidence", "low"), high.get("confidence", "low")), key=lambda key: ranks.get(key, 1))
+        return result, f"Die recommendation interpolated between {lower} and {higher} MT/s."
+    nearest = min(available, key=lambda key: abs(key - mtps))
+    return scaled_range(buckets[nearest][timing_id], nearest, mtps, lower_is_better), f"Die recommendation scaled from {nearest} MT/s."
 
 
 def classify_value(
@@ -237,41 +240,6 @@ def headroom_from_target(value: float, target: float | None, lower_is_better: bo
     if lower_is_better is False:
         return max(0.0, target - value)
     return max(0.0, value - target)
-
-
-def apply_profile_defaults(profile: MemoryProfile, db: dict[str, Any], die_ranges: dict[str, Any]) -> None:
-    for voltage_id, definition in db["voltage_profiles"].items():
-        if voltage_id not in profile.voltages and definition.typical_stock_range:
-            profile.voltages[voltage_id] = float(definition.typical_stock_range[0])
-    ranges = nearest_frequency_ranges(die_ranges, profile.mtps)
-    missing_tcwl = "tCWL" not in profile.timings
-    missing_trc = "tRC" not in profile.timings
-    for timing_id, definition in db["timing_definitions"].items():
-        if timing_id in profile.timings:
-            continue
-        value = default_timing_cycles(ranges.get(timing_id), definition.lower_is_better)
-        profile.timings[timing_id] = value if value is not None else DEFAULT_TIMINGS.get(timing_id, 0)
-    apply_default_timing_rules(profile.timings, missing_tcwl=missing_tcwl, missing_trc=missing_trc)
-
-
-def apply_default_timing_rules(timings: dict[str, int | float], *, missing_tcwl: bool, missing_trc: bool) -> None:
-    tcl = timings.get("tCL")
-    if tcl is not None and missing_tcwl:
-        timings["tCWL"] = max(0, float(tcl) - 2)
-    tras = timings.get("tRAS")
-    trp = timings.get("tRP")
-    if tras is not None and trp is not None and missing_trc:
-        timings["tRC"] = float(tras) + float(trp)
-
-
-def default_timing_cycles(range_data: dict[str, Any] | None, lower_is_better: bool | str) -> float | None:
-    if not range_data:
-        return None
-    if range_data.get("moderate"):
-        return float(range_data["moderate"][0])
-    if range_data.get("tight"):
-        return float(range_data["tight"][1] if lower_is_better is False else range_data["tight"][0])
-    return None
 
 
 def evaluate_voltage(
@@ -383,7 +351,7 @@ def platform_caveats(profile: MemoryProfile, quirks: list[str]) -> list[str]:
 def infer_uclk_mode(profile: MemoryProfile) -> str:
     if "am5" not in profile.platform_id:
         return "not applicable / platform-specific"
-    return "likely 1:1" if profile.mtps <= 6400 else "likely 1:2 or board-dependent"
+    return "Unknown; verify after training"
 
 
 def dedupe_sources(sources: list[SourceRef]) -> list[SourceRef]:

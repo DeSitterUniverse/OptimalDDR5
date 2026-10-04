@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
+import math
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class Classification(StrEnum):
@@ -160,13 +161,17 @@ class MemoryProfile(BaseModel):
     profile_name: str = "Manual profile"
     platform_id: str = "ryzen_am5_zen4"
     bios_version: str | None = None
-    die_id: str = "hynix_16g_m_die"
-    mtps: int = Field(gt=0, default=6000)
+    die_id: str = "unknown"
+    mtps: int = Field(ge=1000, le=20000, default=6000)
     uclk_mclk_mode: str | None = None
-    capacity_total_gb: int = Field(gt=0, default=32)
-    dimm_count: int = Field(gt=0, default=2)
+    capacity_total_gb: int = Field(ge=1, le=2048, default=32)
+    dimm_count: int = Field(ge=1, le=4, default=2)
+    channel_count: int | None = Field(ge=1, le=2, default=None)
     rank: str | None = None
     command_rate: str | None = None
+    notes: str = ""
+    validation_status: Literal["untested", "testing", "passed", "failed"] = "untested"
+    validation_notes: str = ""
     voltages: dict[str, float | None] = Field(default_factory=dict)
     timings: dict[str, int | float | None] = Field(default_factory=dict)
 
@@ -174,6 +179,29 @@ class MemoryProfile(BaseModel):
     @classmethod
     def normalize_keys(cls, value: dict[str, Any]) -> dict[str, Any]:
         return {str(k).strip(): v for k, v in value.items() if v not in ("", None)}
+
+    @field_validator("timings")
+    @classmethod
+    def validate_timings(cls, value: dict[str, Any]) -> dict[str, Any]:
+        if any(not math.isfinite(v) or v < 0 or v > 1_000_000 or v % 1 for v in value.values()):
+            raise ValueError("Timings must be whole cycle counts from 0 to 1,000,000")
+        return value
+
+    @field_validator("voltages")
+    @classmethod
+    def validate_voltages(cls, value: dict[str, Any]) -> dict[str, Any]:
+        if any(not math.isfinite(v) or v <= 0 or v > 5 for v in value.values()):
+            raise ValueError("Voltages must be above 0 and at most 5 V; this is not a safe range")
+        return value
+
+    @model_validator(mode="after")
+    def validate_channels(self) -> MemoryProfile:
+        self.channel_count = self.channel_count or min(2, self.dimm_count)
+        if self.channel_count > self.dimm_count:
+            raise ValueError("Populated channels cannot exceed DIMM count")
+        if not self.profile_name.strip():
+            raise ValueError("Give the profile a name")
+        return self
 
 
 class TimingResult(BaseModel):
@@ -188,6 +216,8 @@ class TimingResult(BaseModel):
     classification: Classification
     headroom_score: float
     target_cycles: float | None = None
+    floor_cycles: float | None = None
+    recommended_cycles: float | None = None
     headroom_cycles: float | None = None
     notes: list[str] = Field(default_factory=list)
     source_confidence: str = "unknown"
