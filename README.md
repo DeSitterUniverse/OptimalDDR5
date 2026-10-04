@@ -1,55 +1,74 @@
-Note: This is still under development and research/validation is not done.
-
 # OptimalDDR5
 
-OptimalDDR5 is a DDR5 RAM timing analyzer. It's a practical tuning notebook, timing analyzer and guide for general OC limits: enter or import a DDR5 profile from HWiNFO .LOG report, convert cycles to nanoseconds, compare timings against OC limits, inspect predicted power consumption, and estimate single-DIMM heat risk.
+A browser-based DDR5 timing analyzer and profile notebook. Enter current BIOS settings or import a HWiNFO text report, inspect timing components in nanoseconds, compare saved profiles, and record external stability tests.
 
-## Features
+## Run the app
 
-- DDR5 timing conversion: MT/s, real clock, cycle time, predicted bandwidth, and high-impact timing latency in ns.
-- Timing glossary with aliases, BIOS naming notes, and dependency notes such as `tWRPRE`/`tWR` and `tWRRD`/`tWTR`.
-- Die/platform/frequency range comparison with tight/moderate/loose/unknown classification.
-- Per-die overclock research separating retail profiles, stability-tested ceilings, limited/failed attempts, benchmark/boot records, daily target ranges, voltages, timings, and user consensus.
-- A current-OC comparison that places the entered frequency and VDD/VDDQ against the selected platform's daily range and the die's stable or non-stable evidence ceiling.
-- AMD AM5 and Intel Alder/Raptor/Arrow Lake voltage guidance with low/average/elevated/high bands.
-- Die-calibrated voltage-based DIMM peak power and heat estimate.
-- Examples spanning Hynix 16Gb/24Gb, Samsung 32Gb, Micron 16Gb D-die, and CXMT 24Gb behavior.
-- HWiNFO `.LOG` import for timing/profile values found in the Memory section.
-- Editable YAML database under `config/`.
-
-## Architecture
-
-- `frontend/src/lib/static-engine.ts`: browser-side timing evaluation, HWiNFO import parsing, voltage comparison, and power estimation.
-- `frontend/public/data/`: compact JSON generated from the editable YAML database for static hosting.
-- `config/`: editable timing definitions, die profiles, voltage ranges, platform notes, power coefficients, and examples.
-- `frontend/`: React/Vite UI for profile entry, timing inspection, voltage review, and heat output.
-- `src/optimalddr5/`: Python reference implementation and validation tests for the same formulas and data model.
-- `tests/`: focused tests for formulas, YAML loading, import behavior, evaluator rules, and power estimates.
-
-## Database
-
-Edit YAML files in `config/`:
-
-- `timing_definitions.yaml`: timing definitions, categories, aliases, dependency notes.
-- `timing_aliases.yaml`: import and UI aliases mapped to canonical timing names.
-- `die_profiles.yaml`: the requested 18-die allowlist, measured and observed overclock limits, community consensus, timing/voltage ranges, and source confidence.
-- `platform_profiles.yaml`: AM5/Intel mode notes, quirks, voltage controls.
-- `voltage_profiles.yaml`: voltage descriptions and risk ranges.
-- `power_model.yaml`: effective voltage weights, die power calibration, capacity scaling, and heat thresholds.
-- `example_profiles.yaml`: built-in sample profiles.
-
-Regenerate the static JSON after editing YAML:
+Install Node.js 22.13 or newer, then run:
 
 ```powershell
-python scripts\build_static_data.py
+cd frontend
+npm.cmd ci
+npm.cmd run dev
 ```
 
-Restart or reload the app after edits.
+Open **http://127.0.0.1:5174/**. Profiles are evaluated in the browser; a Python server is optional.
 
-## HWiNFO Import
+For a production build, run `npm.cmd run build` and `npm.cmd run preview` from `frontend/`. Serve `frontend/dist/` with a static web server. Relative asset paths support hosting in a subdirectory. Opening `index.html` with `file://` does not support the database fetches.
 
-Use the import button and select a `.LOG` file. The parser looks for a Memory section and extracts timing, frequency, capacity, DIMM count, command rate, and likely die hints where present. Manual voltages are preserved because HWiNFO report logs do not reliably contain live memory rail telemetry.
+## Profiles and imports
 
-## Source Warning
+- The editable draft autosaves locally when its fields are valid. **Save snapshot** retains a separate copy for comparison.
+- **Import** accepts HWiNFO `.LOG`/`.TXT` text reports, exported profile JSON, and notebook backups, up to 5 MB. Sensor CSV files are not supported.
+- Report imports replace timing fields and preserve the selected platform, die, and manually entered voltages. XMP text does not identify the CPU platform. Manufacturer/density hints do not confirm a die revision.
+- Missing timings and voltages remain unknown. Changing a hardware setting resets the external test status; previous test notes remain available for reference.
+- **Export profile** saves the current profile. **Export notebook backup** includes the draft and all snapshots. Importing a backup merges snapshots by ID and restores its draft.
+- Storage belongs to the browser and site address. Another browser, port, or hostname has a separate notebook. Export a backup before clearing site data. Storage failures leave current edits available for export.
 
-The database keeps retail/XMP specifications, stability-tested results, limited and failed attempts, benchmark or boot-only records, and owner anecdotes separate. Each attempt can retain frequency, primary timings, VDD/VDDQ, platform, capacity, cooling, validation method, confidence, and a direct source. `Not established` is intentional for rare dies without credible consumer evidence. Nothing is guaranteed: CPU IMC quality, board topology, BIOS, DIMM count, rank, PMIC behavior, thermals, and workload can all change what is usable.
+The notebook supports 100 snapshots. Removing one provides an Undo action during the current session.
+
+## Interpretation
+
+Clock MHz = MT/s / 2; cycle ns = 2000 / MT/s. At 6000 MT/s, CL30 is a 10 ns CAS component, not measured system latency. Theoretical bandwidth uses the selected number of populated **64-bit channels**; four DIMMs on a dual-channel CPU still use two channels.
+
+Timing classifications and voltage bands are reference comparisons, not safe limits, stability verdicts, or guaranteed targets. Die ranges at other frequencies are interpolated or scaled and receive reduced confidence. General ranges are community comparisons, not JEDEC minimums.
+
+The power model is an **unvalidated comparative heuristic**. It does not measure watts, estimate temperature, or establish thermal safety. Missing VDD/VDDQ uses 1.10 V assumptions within the model without filling the profile fields. Die coefficients have not been independently validated against measurements.
+
+The app cannot apply BIOS settings or test memory. Use external tools and record conditions. Die research retains retail profiles, reported stability tests, limited/failed attempts, benchmark results, and boot records as separate evidence. The existing 18-die histories have not all been independently reverified; their research dates remain visible.
+
+See [research sources and findings](docs/research-review.md) and [implementation review](docs/app-review.md).
+
+## Database and reference API
+
+Python 3.12 or newer is required for YAML generation, the reference API, and its tests. From the repository root:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.venv\Scripts\python.exe scripts\build_static_data.py
+.venv\Scripts\python.exe -m uvicorn optimalddr5.api.main:app --app-dir src --host 127.0.0.1 --port 8000
+```
+
+API documentation: `http://127.0.0.1:8000/docs`. The frontend uses the browser engine rather than this server.
+
+Edit YAML under `config/`, then regenerate browser JSON. `timing_reference_ranges.yaml` contains shared general comparison ranges; die evidence remains in `die_profiles.yaml`. Regenerate fixtures after intentional calculation/database changes:
+
+```powershell
+.venv\Scripts\python.exe scripts\build_static_data.py
+.venv\Scripts\python.exe scripts\build_engine_fixtures.py
+```
+
+## Checks
+
+```powershell
+.venv\Scripts\python.exe -m pytest -q
+.venv\Scripts\python.exe scripts\build_static_data.py --check
+.venv\Scripts\python.exe scripts\build_engine_fixtures.py --check
+cd frontend
+npm.cmd test
+npm.cmd run build
+npm.cmd audit
+```
+
+CI runs Python tests, generated-data checks, browser/Python calculation comparisons, React workflow tests, and the production build.
